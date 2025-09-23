@@ -1,6 +1,9 @@
 <?php
 
-use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\BatchController;
+use App\Http\Controllers\OfficerController;
+use App\Http\Controllers\AttendanceEventController;
+use App\Http\Controllers\AttendanceRecordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\MemberController;
 use Illuminate\Foundation\Application;
@@ -29,24 +32,41 @@ Route::middleware('auth')->group(function () {
 
 //Members
 Route::middleware('auth')->group(function () {
-    Route::get('/members', function () {return inertia('Members/MemberList');});
-    Route::get('/members', [MemberController::class, 'index']);
-    Route::post('/members', [MemberController::class, 'store']);
-    Route::get('/members/{id}', [MemberController::class, 'show']);
-    Route::put('/members/{id}', [MemberController::class, 'update']);
-    Route::delete('/members/{id}', [MemberController::class, 'destroy']);
-    Route::get('/members', function () { $members = Member::all(); return Inertia::render('Members/MemberList', ['members' => $members,]);
-    Route::post('/members', [MemberController::class, 'store'])->name('members.store');
     Route::get('/members', [MemberController::class, 'index'])->name('members.index');
+    Route::post('/members', [MemberController::class, 'store'])->name('members.store');
+    Route::get('/members/{id}', [MemberController::class, 'show'])->name('members.show');
     Route::put('/members/{id}', [MemberController::class, 'update'])->name('members.update');
-    Route::resource('members', MemberController::class);
+    Route::delete('/members/{id}', [MemberController::class, 'destroy'])->name('members.destroy');
+    Route::get('/members', [MemberController::class, 'index']);
+
 });
+
+//Officers
+Route::middleware('auth')->group(function () {
+Route::get('/officers/current', [OfficerController::class, 'currentOfficers']);
+Route::get('/officers/current', [OfficerController::class, 'current'])->middleware('auth');
+Route::get('/officers/current', [OfficerController::class, 'current']);
+Route::get('/officers/{officer}', [OfficerController::class, 'show']);
+Route::put('/officers/{officer}', [OfficerController::class, 'update']);
+Route::post('/officers', [OfficerController::class, 'store']);
+});
+
+//Batch
+Route::middleware('auth')->group(function () {
+    Route::get('/batches', [BatchController::class, 'index']);
+    Route::get('/batches/{id}', [BatchController::class, 'show']);
+    Route::post('/batches', [BatchController::class, 'store']);
+    Route::put('/batches/{id}', [BatchController::class, 'update']);
+    Route::delete('/batches/{id}', [BatchController::class, 'destroy']);
 });
 
 //Attendance
 Route::middleware('auth')->group(function () {
-    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
-    Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
+    Route::get('/attendance-events', [AttendanceEventController::class, 'index'])->name('attendance.index');
+    Route::post('/attendance-events', [AttendanceEventController::class, 'store'])->name('attendance.store');
+
+    Route::get('/attendance-records', [AttendanceRecordController::class, 'index'])->name('attendance-records.index');
+    Route::post('/attendance-records', [AttendanceRecordController::class, 'store'])->name('attendance-records.store');
 });
 
 

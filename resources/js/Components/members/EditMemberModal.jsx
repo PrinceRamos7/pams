@@ -9,19 +9,26 @@ export default function EditMemberModal({
 }) {
     const [isVisible, setIsVisible] = useState(false);
 
+    // Animate modal opening
     useEffect(() => {
-        // Trigger animation on mount
         setIsVisible(true);
     }, []);
 
+    // Animate modal closing
     const handleClose = () => {
         setIsVisible(false);
-        setTimeout(closeModal, 400); // Match duration with transition
+        setTimeout(closeModal, 400); // wait for animation before unmount
+    };
+
+    // Form submit (prevent default and trigger parent handler)
+    const onSubmit = (e) => {
+        e.preventDefault();
+        handleSubmit();
     };
 
     return (
         <div className="fixed inset-0 z-50 flex justify-end">
-            {/* Background overlay */}
+            {/* Overlay */}
             <div
                 className={`fixed inset-0 bg-black bg-opacity-40 transition-opacity duration-400 ${
                     isVisible ? "opacity-100" : "opacity-0"
@@ -30,13 +37,14 @@ export default function EditMemberModal({
             />
 
             {/* Modal */}
-            <div
+            <form
+                onSubmit={onSubmit}
                 className={`relative bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex overflow-hidden transform transition-transform duration-400 ease-in-out ${
                     isVisible ? "translate-x-0" : "translate-x-full"
                 }`}
             >
-                {/* Left Column */}
-                <div className="w-1/2 p-6 space-y-4">
+                {/* Left Column (Member Info) */}
+                <div className="w-1/2 p-6 space-y-4 overflow-y-auto">
                     <h2 className="text-xl font-bold text-blue-600">
                         Edit Member
                     </h2>
@@ -109,7 +117,7 @@ export default function EditMemberModal({
                                 {field.type === "select" ? (
                                     <select
                                         name={field.name}
-                                        value={formData[field.name]}
+                                        value={formData[field.name] || ""}
                                         onChange={handleChange}
                                         required={field.required}
                                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
@@ -127,7 +135,7 @@ export default function EditMemberModal({
                                     <input
                                         type={field.type}
                                         name={field.name}
-                                        value={formData[field.name]}
+                                        value={formData[field.name] || ""}
                                         onChange={handleChange}
                                         required={field.required}
                                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
@@ -138,8 +146,8 @@ export default function EditMemberModal({
                     </div>
                 </div>
 
-                {/* Right Column */}
-                <div className="w-1/2 p-6 bg-blue-600 text-white space-y-4">
+                {/* Right Column (Contact Info) */}
+                <div className="w-1/2 p-6 bg-blue-600 text-white space-y-4 overflow-y-auto">
                     <h2 className="text-xl font-bold">Contact Details</h2>
                     {[
                         { label: "Phone", name: "phone_number", type: "text" },
@@ -153,7 +161,7 @@ export default function EditMemberModal({
                             <input
                                 type={field.type}
                                 name={field.name}
-                                value={formData[field.name]}
+                                value={formData[field.name] || ""}
                                 onChange={handleChange}
                                 className="mt-1 block w-full px-3 py-2 rounded-md text-gray-800 focus:outline-none focus:ring-2 focus:ring-white sm:text-sm"
                             />
@@ -161,15 +169,16 @@ export default function EditMemberModal({
                     ))}
                 </div>
 
-                {/* Buttons */}
+                {/* Action Buttons */}
                 <div className="absolute bottom-6 right-6 flex space-x-2">
                     <button
-                        onClick={handleSubmit}
-                        className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-green-700 transition"
+                        type="submit"
+                        className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
                     >
                         Save
                     </button>
                     <button
+                        type="button"
                         onClick={handleClose}
                         className="px-6 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition"
                     >
@@ -177,14 +186,15 @@ export default function EditMemberModal({
                     </button>
                 </div>
 
-                {/* Close Button */}
+                {/* Close Button (Top Right) */}
                 <button
+                    type="button"
                     onClick={handleClose}
-                    className="absolute top-4 right-4 text-white bg-gray-400 rounded-full p-1 hover:bg-gray-500 transition"
+                    className="absolute top-4 right-4 text-gray-800 bg-gray-200 rounded-full p-1 hover:bg-gray-300 transition"
                 >
                     <X size={20} />
                 </button>
-            </div>
+            </form>
         </div>
     );
 }

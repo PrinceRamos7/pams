@@ -5,15 +5,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Officer extends Model
 {
-    protected $table = 'officers';
-    protected $primaryKey = 'officer_id';
-    protected $fillable = [
-        'position',
-        'member_id',
-    ];
-
+    protected $primaryKey = 'officer_id'; // important!
+    
     public function member()
     {
         return $this->belongsTo(Member::class, 'member_id', 'member_id');
+    }
+
+    public function batch()
+    {
+        return $this->belongsTo(Batch::class, 'batch_id', 'id');
     }
 }

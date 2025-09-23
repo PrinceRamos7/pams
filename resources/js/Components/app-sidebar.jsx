@@ -45,7 +45,10 @@ export function AppSidebar({ ...props }) {
                 isActive: true,
                 items: [
                     { title: "Dashboard", url: "#" },
-                    { title: "Attendance", url: route("attendance.index") },
+                    {
+                        title: "Attendance",
+                        url: route("attendance.index"),
+                    },
                     { title: "Members", url: "/members" },
                     { title: "Settings", url: "#" },
                 ],

@@ -27,5 +27,12 @@ class Member extends Model
 {
     return $this->hasOne(Officer::class, 'member_id', 'member_id');
 }
+   public function attendanceRecords()
+    {
+        return $this->hasMany(AttendanceRecord::class, 'member_id', 'member_id');
+    }
 
+    
 }
+
+

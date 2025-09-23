@@ -3,10 +3,10 @@ import { Eye, Edit, Trash2, X } from "lucide-react";
 import { Inertia } from "@inertiajs/inertia";
 import { Transition } from "@headlessui/react";
 
-// Import modular modals
 import AddMemberModal from "./AddMemberModal";
 import EditMemberModal from "./EditMemberModal";
 import ViewMemberModal from "./ViewMemberModal";
+import OfficerTable from "./OfficerTable";
 
 export default function MemberTable({ members }) {
     const [selectedMember, setSelectedMember] = useState(null);
@@ -29,6 +29,39 @@ export default function MemberTable({ members }) {
         status: "",
     });
 
+    // Officers toggle state
+    const [showOfficers, setShowOfficers] = useState(false);
+    const [officers, setOfficers] = useState([]);
+
+    // --- Toggle officers function ---
+    const toggleOfficers = async () => {
+        if (showOfficers) {
+            setShowOfficers(false);
+            return;
+        }
+
+        try {
+            const response = await fetch("/officers/current", {
+                headers: { Accept: "application/json" },
+            });
+
+            // Check if response is JSON
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                console.error(
+                    "Expected JSON but received:",
+                    await response.text()
+                );
+                return;
+            }
+
+            const data = await response.json();
+            setOfficers(data);
+            setShowOfficers(true);
+        } catch (error) {
+            console.error("Failed to fetch officers:", error);
+        }
+    };
     // --- Modal Handlers ---
     const openViewModal = (member) => {
         setSelectedMember(member);
@@ -89,8 +122,7 @@ export default function MemberTable({ members }) {
     };
 
     // --- Submit Functions ---
-    const handleAddSubmit = (e) => {
-        e.preventDefault();
+    const handleAddSubmit = () => {
         if (
             !formData.student_id ||
             !formData.firstname ||
@@ -110,8 +142,7 @@ export default function MemberTable({ members }) {
         });
     };
 
-    const handleEditSubmit = (e) => {
-        e.preventDefault();
+    const handleEditSubmit = () => {
         if (
             !formData.student_id ||
             !formData.firstname ||
@@ -125,7 +156,7 @@ export default function MemberTable({ members }) {
         Inertia.put(`/members/${selectedMember.member_id}`, formData, {
             onSuccess: () => {
                 showNotification("Member updated successfully!");
-                setTimeout(() => Inertia.visit("/members"), 1000);
+                closeEditModal();
             },
             onError: () =>
                 showNotification("Failed to update member.", "error"),
@@ -247,7 +278,18 @@ export default function MemberTable({ members }) {
                     </tbody>
                 </table>
             </div>
+            {/* Toggle Officers Button */}
+            <div className="mt-4 flex justify-end">
+                <button
+                    onClick={toggleOfficers}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold"
+                >
+                    {showOfficers ? "Hide Officers" : "View Officers"}
+                </button>
+            </div>
 
+            {/* Officers Table */}
+            {showOfficers && <OfficerTable officers={officers} />}
             {/* Modals */}
             {isAddModalOpen && (
                 <AddMemberModal
