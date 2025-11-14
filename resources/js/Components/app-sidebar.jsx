@@ -50,7 +50,8 @@ export function AppSidebar({ ...props }) {
                         url: route("attendance.index"),
                     },
                     { title: "Members", url: "/members" },
-                    { title: "Settings", url: "#" },
+                    { title: "Sanctions", url: "/sanctions" },
+
                 ],
             },
         ],
@@ -61,7 +62,7 @@ export function AppSidebar({ ...props }) {
     const currentUser = {
         name: user?.name || "Guest",
         email: user?.email || "guest@example.com",
-        avatar: user?.avatar || "/default-avatar.jpg",
+        avatar: user?.avatar || "/default-avatar.svg",
     };
 
     return (

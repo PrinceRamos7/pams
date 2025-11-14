@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { Eye, Edit, Trash2, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Eye, Edit, Trash2, X, Camera, MoreVertical } from "lucide-react";
 import { Inertia } from "@inertiajs/inertia";
+import { router } from "@inertiajs/react";
 import { Transition } from "@headlessui/react";
 
 import AddMemberModal from "./AddMemberModal";
@@ -15,6 +16,7 @@ export default function MemberTable({ members }) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [notification, setNotification] = useState({ message: "", type: "" });
+    const [openMenuId, setOpenMenuId] = useState(null);
     const [formData, setFormData] = useState({
         student_id: "",
         firstname: "",
@@ -32,6 +34,21 @@ export default function MemberTable({ members }) {
     // Officers toggle state
     const [showOfficers, setShowOfficers] = useState(false);
     const [officers, setOfficers] = useState([]);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (!e.target.closest('.relative')) {
+                setOpenMenuId(null);
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
+
+    const toggleMenu = (memberId) => {
+        setOpenMenuId(openMenuId === memberId ? null : memberId);
+    };
 
     // --- Toggle officers function ---
     const toggleOfficers = async () => {
@@ -214,7 +231,7 @@ export default function MemberTable({ members }) {
             {/* Members Table */}
             <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                 <table className="min-w-full text-sm">
-                    <thead className="bg-gray-100 text-gray-700 font-semibold uppercase tracking-wider">
+                    <thead className="bg-blue-500 text-white font-semibold uppercase tracking-wider">
                         <tr>
                             <th className="px-4 py-3 border-b-2 border-gray-200 text-left">
                                 Student ID
@@ -253,25 +270,68 @@ export default function MemberTable({ members }) {
                                 <td className="px-4 py-3">{m.year}</td>
                                 <td className="px-4 py-3">{m.phone_number}</td>
                                 <td className="px-4 py-3">{m.status}</td>
-                                <td className="px-4 py-3 text-center space-x-2">
-                                    <button
-                                        onClick={() => openViewModal(m)}
-                                        className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100"
-                                    >
-                                        <Eye size={20} />
-                                    </button>
-                                    <button
-                                        onClick={() => openEditModal(m)}
-                                        className="text-green-600 hover:text-green-800 p-1 rounded-full hover:bg-green-100"
-                                    >
-                                        <Edit size={20} />
-                                    </button>
-                                    <button
-                                        onClick={() => openDeleteModal(m)}
-                                        className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100"
-                                    >
-                                        <Trash2 size={20} />
-                                    </button>
+                                <td className="px-4 py-3 text-center">
+                                    <div className="relative inline-block">
+                                        <button
+                                            onClick={() => toggleMenu(m.member_id)}
+                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                        >
+                                            <MoreVertical size={20} className="text-gray-600" />
+                                        </button>
+                                        
+                                        {/* Dropdown Menu */}
+                                        {openMenuId === m.member_id && (
+                                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                                                <div className="py-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            openViewModal(m);
+                                                            setOpenMenuId(null);
+                                                        }}
+                                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-3 text-gray-700"
+                                                    >
+                                                        <Eye size={16} />
+                                                        View Details
+                                                    </button>
+                                                    
+                                                    <button
+                                                        onClick={() => {
+                                                            openEditModal(m);
+                                                            setOpenMenuId(null);
+                                                        }}
+                                                        className="w-full text-left px-4 py-2 hover:bg-green-50 flex items-center gap-3 text-green-700"
+                                                    >
+                                                        <Edit size={16} />
+                                                        Edit Member
+                                                    </button>
+                                                    
+                                                    <button
+                                                        onClick={() => {
+                                                            router.visit(route('members.register-face', m.member_id));
+                                                            setOpenMenuId(null);
+                                                        }}
+                                                        className="w-full text-left px-4 py-2 hover:bg-purple-50 flex items-center gap-3 text-purple-700"
+                                                    >
+                                                        <Camera size={16} />
+                                                        Register Face
+                                                    </button>
+                                                    
+                                                    <div className="border-t border-gray-100 my-1"></div>
+                                                    
+                                                    <button
+                                                        onClick={() => {
+                                                            openDeleteModal(m);
+                                                            setOpenMenuId(null);
+                                                        }}
+                                                        className="w-full text-left px-4 py-2 hover:bg-red-50 flex items-center gap-3 text-red-600"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                        Delete Member
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}

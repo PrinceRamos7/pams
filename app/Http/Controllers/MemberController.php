@@ -11,15 +11,34 @@ class MemberController extends Controller
     /**
      * Display a listing of the members.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $members = Member::all();
+        $query = Member::query();
+        
+        // Search functionality
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('student_id', 'like', "%{$search}%")
+                  ->orWhere('firstname', 'like', "%{$search}%")
+                  ->orWhere('lastname', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+        
+        // Return JSON if requested via AJAX
+        if ($request->wantsJson() || $request->expectsJson()) {
+            return response()->json($query->get());
+        }
+        
+        // Paginate for Inertia page (10 per page)
+        $members = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
+        
+        // Otherwise return Inertia page
         return Inertia::render('Members/MemberList', [
             'members' => $members,
+            'filters' => $request->only(['search']),
         ]);
-
-        $members = Member::select('id as member_id', 'firstname', 'lastname')->get();
-        return response()->json($members);
     }
 
     /**
@@ -85,5 +104,50 @@ class MemberController extends Controller
     {
         $member->delete();
         return redirect()->back()->with('success', 'Member deleted successfully!');
+    }
+
+    /**
+     * Export Members List to PDF
+     */
+    public function exportPDF()
+    {
+        try {
+            \Log::info('PDF Export started');
+            
+            $members = Member::orderBy('lastname', 'asc')
+                ->orderBy('firstname', 'asc')
+                ->get();
+
+            \Log::info('PDF Export - Member count: ' . $members->count());
+            
+            if ($members->isEmpty()) {
+                \Log::warning('PDF Export - No members found');
+                return redirect()->back()->with('error', 'No members found to export.');
+            }
+
+            \Log::info('PDF Export - Loading view');
+            
+            $data = [
+                'members' => $members,
+                'generatedAt' => now()->format('F d, Y h:i A')
+            ];
+            
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.members-list-simple', $data);
+            
+            \Log::info('PDF Export - View loaded, setting paper');
+            
+            $pdf->setPaper('A4', 'landscape');
+            
+            \Log::info('PDF Export - Streaming PDF');
+
+            return $pdf->stream('members-list-' . now()->format('Y-m-d') . '.pdf');
+        } catch (\Exception $e) {
+            \Log::error('PDF Export Error: ' . $e->getMessage());
+            \Log::error('PDF Export Stack: ' . $e->getTraceAsString());
+            return response()->json([
+                'error' => 'Failed to generate PDF',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }

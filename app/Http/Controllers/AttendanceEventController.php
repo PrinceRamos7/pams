@@ -30,22 +30,211 @@ class AttendanceEventController extends Controller
     /**
      * Store a new attendance event
      */
-  public function store(Request $request)
-{
-    $request->validate([
-        'date' => 'required|date',
-        'agenda' => 'required|string|max:255',
-    ]);
+    public function store(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date',
+            'agenda' => 'required|string|max:255',
+            'time_in' => 'required',
+            'time_out' => 'required',
+        ]);
 
-    $event = AttendanceEvent::create([
-        'date' => $request->date,
-        'agenda' => $request->agenda,
-    ]);
+        $event = AttendanceEvent::create([
+            'date' => $request->date,
+            'agenda' => $request->agenda,
+            'time_in' => $request->time_in,
+            'time_out' => $request->time_out,
+            'time_in_duration' => $request->time_in_duration ?? 30,
+            'time_out_duration' => $request->time_out_duration ?? 30,
+        ]);
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Event added successfully!',
-        'event' => $event,
-    ]);
-}
+        return response()->json([
+            'success' => true,
+            'message' => 'Event added successfully!',
+            'event' => $event,
+        ]);
+    }
+
+    /**
+     * Update an attendance event
+     */
+    public function update(Request $request, $eventId)
+    {
+        try {
+            $request->validate([
+                'date' => 'required|date',
+                'agenda' => 'required|string|max:255',
+                'time_in' => 'required',
+                'time_out' => 'required',
+            ]);
+
+            $event = AttendanceEvent::findOrFail($eventId);
+            
+            $event->update([
+                'date' => $request->date,
+                'agenda' => $request->agenda,
+                'time_in' => $request->time_in,
+                'time_out' => $request->time_out,
+                'time_in_duration' => $request->time_in_duration ?? $event->time_in_duration ?? 30,
+                'time_out_duration' => $request->time_out_duration ?? $event->time_out_duration ?? 30,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Event updated successfully!',
+                'event' => $event->fresh(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to update event', ['error' => $e->getMessage(), 'eventId' => $eventId]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update event: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete an attendance event
+     */
+    public function destroy($eventId)
+    {
+        try {
+            $event = AttendanceEvent::findOrFail($eventId);
+            $eventName = $event->agenda;
+            
+            $event->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Event '{$eventName}' deleted successfully!",
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete event: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Force begin time out window
+     */
+    public function forceBeginTimeOut($eventId)
+    {
+        try {
+            $event = AttendanceEvent::findOrFail($eventId);
+            
+            // Check if already closed
+            if ($event->status === 'closed') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Event is already closed.',
+                ], 400);
+            }
+            
+            // Update the time_out to current time to force open the window
+            $now = now();
+            $event->update([
+                'time_out' => $now->format('H:i:s'),
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Time-out window opened for '{$event->agenda}'. Members can now time out.",
+                'event' => $event->fresh(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to force begin time out', ['error' => $e->getMessage(), 'eventId' => $eventId]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to open time-out window: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Force reopen time out window (extend time-out duration)
+     */
+    public function forceReopenTimeOut($eventId)
+    {
+        try {
+            $event = AttendanceEvent::findOrFail($eventId);
+            
+            // Check if already closed
+            if ($event->status === 'closed') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Event is already closed. Cannot reopen time-out window.',
+                ], 400);
+            }
+            
+            // Extend time-out duration by 30 minutes from now
+            $now = now();
+            $event->update([
+                'time_out' => $now->format('H:i:s'),
+                'time_out_duration' => 30, // Reset to 30 minutes
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Time-out window reopened for '{$event->agenda}'. Members can time out for the next 30 minutes.",
+                'event' => $event->fresh(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to reopen time out window', ['error' => $e->getMessage(), 'eventId' => $eventId]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to reopen time-out window: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Force close an event and calculate sanctions
+     */
+    public function forceClose($eventId)
+    {
+        try {
+            $event = AttendanceEvent::findOrFail($eventId);
+            
+            // Check if already closed
+            if ($event->status === 'closed') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Event is already closed.',
+                ], 400);
+            }
+            
+            $sanctionService = app(\App\Services\SanctionService::class);
+            
+            // Calculate sanctions for this event
+            $result = $sanctionService->calculateSanctionsForEvent($eventId);
+            
+            if ($result['success']) {
+                // Mark event as closed
+                $event->update([
+                    'status' => 'closed',
+                    'closed_at' => now(),
+                ]);
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => "Event '{$event->agenda}' closed. {$result['sanctions_created']} sanctions created.",
+                    'sanctions_created' => $result['sanctions_created'],
+                    'event' => $event->fresh(),
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['message'],
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to force close event', ['error' => $e->getMessage(), 'eventId' => $eventId]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to close event: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

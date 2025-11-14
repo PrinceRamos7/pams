@@ -1,4 +1,3 @@
-
 <?php
 
 namespace App\Models;
@@ -19,8 +18,14 @@ class AttendanceRecord extends Model
         'member_id', 
         'time_in', 
         'time_out', 
-        'status',  // Added this
-        'photo'
+        'status',
+        'photo',
+        'photo_out'
+    ];
+
+    protected $casts = [
+        'time_in' => 'datetime',
+        'time_out' => 'datetime',
     ];
 
     public function event()

@@ -35,8 +35,8 @@ export default function OfficerTable({ officers }) {
             </div>
 
             <table className="w-full text-sm">
-                <thead className="bg-gray-100 sticky top-0 z-10">
-                    <tr className="text-left text-gray-700 font-semibold">
+                <thead className="bg-blue-500 text-white sticky top-0 z-10">
+                    <tr className="text-left font-semibold">
                         <th className="p-3">Officer ID</th>
                         <th className="p-3">Position</th>
                         <th className="p-3">Member Name</th>

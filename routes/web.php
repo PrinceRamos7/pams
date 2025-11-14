@@ -6,6 +6,8 @@ use App\Http\Controllers\AttendanceEventController;
 use App\Http\Controllers\AttendanceRecordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\FaceIOController;
+use App\Http\Controllers\SanctionController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use App\Models\Member;
@@ -37,8 +39,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/members/{id}', [MemberController::class, 'show'])->name('members.show');
     Route::put('/members/{id}', [MemberController::class, 'update'])->name('members.update');
     Route::delete('/members/{id}', [MemberController::class, 'destroy'])->name('members.destroy');
-    Route::get('/members', [MemberController::class, 'index']);
-
+    Route::get('/members/{id}/register-face', function ($id) {
+        $member = Member::findOrFail($id);
+        return Inertia::render('Members/RegisterFace', ['member' => $member]);
+    })->name('members.register-face');
 });
 
 //Officers
@@ -64,10 +68,136 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/attendance-events', [AttendanceEventController::class, 'index'])->name('attendance.index');
     Route::post('/attendance-events', [AttendanceEventController::class, 'store'])->name('attendance.store');
+    Route::put('/attendance-events/{eventId}', [AttendanceEventController::class, 'update'])->name('attendance.update');
+    Route::delete('/attendance-events/{eventId}', [AttendanceEventController::class, 'destroy'])->name('attendance.destroy');
+    Route::post('/attendance-events/{eventId}/force-begin-timeout', [AttendanceEventController::class, 'forceBeginTimeOut'])->name('attendance.force-begin-timeout');
+    Route::post('/attendance-events/{eventId}/force-reopen-timeout', [AttendanceEventController::class, 'forceReopenTimeOut'])->name('attendance.force-reopen-timeout');
+    Route::post('/attendance-events/{eventId}/force-close', [AttendanceEventController::class, 'forceClose'])->name('attendance.force-close');
 
     Route::get('/attendance-records', [AttendanceRecordController::class, 'index'])->name('attendance-records.index');
+    Route::get('/attendance-records/create/{eventId}', [AttendanceRecordController::class, 'create'])->name('attendance-records.create');
+    Route::get('/attendance-records/time-in/{eventId}', [AttendanceRecordController::class, 'timeIn'])->name('attendance-records.time-in');
+    Route::get('/attendance-records/time-out/{eventId}', [AttendanceRecordController::class, 'timeOut'])->name('attendance-records.time-out');
+    Route::get('/attendance-records/view/{eventId}', [AttendanceRecordController::class, 'view'])->name('attendance-records.view');
     Route::post('/attendance-records', [AttendanceRecordController::class, 'store'])->name('attendance-records.store');
+    Route::put('/attendance-records/{recordId}', [AttendanceRecordController::class, 'update'])->name('attendance-records.update');
+    
+    // Two-Step Verification Attendance Routes
+    Route::get('/attendance-records/two-step-time-in/{eventId}', function ($eventId) {
+        $event = \App\Models\AttendanceEvent::findOrFail($eventId);
+        
+        // Check if event is closed
+        if ($event->status === 'closed') {
+            return redirect()->route('attendance.index')
+                ->with('error', 'This event is closed. Time-in is no longer available.');
+        }
+        
+        return Inertia::render('Attendance/TwoStepTimeIn', ['event' => $event]);
+    })->name('attendance-records.two-step-time-in');
+    
+    Route::get('/attendance-records/two-step-time-out/{eventId}', function ($eventId) {
+        $event = \App\Models\AttendanceEvent::findOrFail($eventId);
+        
+        // Check if event is closed
+        if ($event->status === 'closed') {
+            return redirect()->route('attendance.index')
+                ->with('error', 'This event is closed. Time-out is no longer available.');
+        }
+        
+        return Inertia::render('Attendance/TwoStepTimeOut', ['event' => $event]);
+    })->name('attendance-records.two-step-time-out');
+    
+    // Legacy FaceIO Attendance Routes (kept for backward compatibility)
+    Route::get('/attendance-records/face-time-in/{eventId}', function ($eventId) {
+        $event = \App\Models\AttendanceEvent::findOrFail($eventId);
+        
+        // Check if event is closed
+        if ($event->status === 'closed') {
+            return redirect()->route('attendance.index')
+                ->with('error', 'This event is closed. Time-in is no longer available.');
+        }
+        
+        return Inertia::render('Attendance/FaceTimeIn', ['event' => $event]);
+    })->name('attendance-records.face-time-in');
+    
+    Route::get('/attendance-records/face-time-out/{eventId}', function ($eventId) {
+        $event = \App\Models\AttendanceEvent::findOrFail($eventId);
+        
+        // Check if event is closed
+        if ($event->status === 'closed') {
+            return redirect()->route('attendance.index')
+                ->with('error', 'This event is closed. Time-out is no longer available.');
+        }
+        
+        $membersWithTimeIn = \App\Models\AttendanceRecord::with('member')
+            ->where('event_id', $eventId)
+            ->whereNotNull('time_in')
+            ->whereNull('time_out')
+            ->get();
+        return Inertia::render('Attendance/FaceTimeOut', [
+            'event' => $event,
+            'membersWithTimeIn' => $membersWithTimeIn
+        ]);
+    })->name('attendance-records.face-time-out');
 });
 
+// Face Recognition API Routes (Free - No API Key Required!)
+Route::prefix('api/faceio')->middleware('auth')->group(function () {
+    Route::post('/enroll', [FaceIOController::class, 'enrollMember']);
+    Route::get('/enrolled-faces', [FaceIOController::class, 'getEnrolledFaces']);
+    Route::post('/authenticate', [FaceIOController::class, 'authenticateMember']);
+    Route::delete('/unenroll/{memberId}', [FaceIOController::class, 'unenrollMember']);
+    Route::get('/check-enrollment/{memberId}', [FaceIOController::class, 'checkEnrollment']);
+});
+
+// Member Verification API
+Route::prefix('api/members')->middleware('auth')->group(function () {
+    Route::get('/verify/{studentId}', [FaceIOController::class, 'verifyByStudentId'])->name('api.members.verify');
+});
+
+// Attendance Records API
+Route::prefix('api/attendance-records')->middleware('auth')->group(function () {
+    Route::get('/check-time-in', [AttendanceRecordController::class, 'checkTimeIn'])->name('api.attendance-records.check-time-in');
+});
+
+// Password Verification API
+Route::post('/api/verify-password', [SanctionController::class, 'verifyPassword'])->middleware('auth')->name('api.verify-password');
+
+// Sanctions API Routes
+Route::prefix('api/sanctions')->middleware('auth')->group(function () {
+    Route::get('/', [SanctionController::class, 'index'])->name('api.sanctions.index');
+    Route::get('/summary', [SanctionController::class, 'summary'])->name('api.sanctions.summary');
+    Route::get('/member/{memberId}', [SanctionController::class, 'memberSanctions'])->name('api.sanctions.member');
+    Route::get('/{sanctionId}', [SanctionController::class, 'show'])->name('api.sanctions.show');
+    Route::put('/{sanctionId}', [SanctionController::class, 'update'])->name('api.sanctions.update');
+    Route::put('/{sanctionId}/pay', [SanctionController::class, 'markAsPaid'])->name('api.sanctions.pay');
+    Route::delete('/event/{eventId}', [SanctionController::class, 'deleteEventSanctions'])->name('api.sanctions.delete-event');
+});
+
+// Sanctions Web Routes
+Route::middleware('auth')->group(function () {
+    Route::get('/sanctions', [SanctionController::class, 'index'])->name('sanctions.index');
+    Route::get('/sanctions/event/{eventId}', [SanctionController::class, 'eventSanctions'])->name('sanctions.event');
+    
+    // PDF Export Routes
+    Route::get('/sanctions/export-pdf', [SanctionController::class, 'exportEventsPDF'])->name('sanctions.export-pdf');
+    Route::get('/sanctions/event/{eventId}/export-pdf', [SanctionController::class, 'exportEventSanctionsPDF'])->name('sanctions.event.export-pdf');
+});
+
+// Members PDF Export
+Route::middleware('auth')->group(function () {
+    Route::get('/members/export-pdf', [MemberController::class, 'exportPDF'])->name('members.export-pdf');
+    
+    // Test PDF route
+    Route::get('/test-pdf', function() {
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.test-pdf');
+        return $pdf->stream('test.pdf');
+    });
+});
+
+// Attendance PDF Export
+Route::middleware('auth')->group(function () {
+    Route::get('/attendance-records/{eventId}/export-pdf', [AttendanceRecordController::class, 'exportPDF'])->name('attendance-records.export-pdf');
+});
 
 require __DIR__.'/auth.php';

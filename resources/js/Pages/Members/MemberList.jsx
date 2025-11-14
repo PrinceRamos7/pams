@@ -18,9 +18,12 @@ import {
     CardTitle,
 } from "../../components/ui/card";
 import MemberTable from "../../Components/Members/MemberTable";
+import Pagination from "../../Components/Pagination";
 
-export default function MemberList({ members }) {
+export default function MemberList({ members: paginatedMembers }) {
     const { flash } = usePage().props;
+    
+    const members = paginatedMembers?.data || [];
 
     // Flash messages
     useEffect(() => {
@@ -52,10 +55,17 @@ export default function MemberList({ members }) {
                     <div className="max-w-7xl mx-auto">
                         <Card className="w-full h-auto">
                             <CardHeader>
-                                <CardTitle></CardTitle>
+                                <CardTitle>Members List</CardTitle>
                             </CardHeader>
                             <CardContent className="">
                                 <MemberTable members={members} />
+                                
+                                {/* Pagination */}
+                                {paginatedMembers?.links && paginatedMembers.links.length > 3 && (
+                                    <div className="mt-6">
+                                        <Pagination links={paginatedMembers.links} />
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
