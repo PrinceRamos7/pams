@@ -33,11 +33,22 @@ class SanctionService
             $now = Carbon::now();
             $sanctionsCreated = [];
             
-            // Only process if event is closed OR time-in window has passed
-            if ($event->status !== 'closed' && $now->lt($timeInEnd)) {
+            Log::info('Sanction calculation started', [
+                'event_id' => $eventId,
+                'event_status' => $event->status,
+                'time_in_end' => $timeInEnd->toDateTimeString(),
+                'time_out_end' => $timeOutEnd->toDateTimeString(),
+                'now' => $now->toDateTimeString(),
+                'time_in_passed' => $now->gt($timeInEnd),
+                'time_out_passed' => $now->gt($timeOutEnd)
+            ]);
+            
+            // When force closing, we should calculate sanctions regardless of time windows
+            // Only skip if explicitly not closed and time-in window hasn't started yet
+            if ($event->status !== 'closed' && $now->lt(Carbon::parse($event->date . ' ' . $event->time_in))) {
                 return [
                     'success' => true,
-                    'message' => 'Time-in window still active',
+                    'message' => 'Event has not started yet',
                     'sanctions_created' => 0
                 ];
             }
@@ -78,18 +89,16 @@ class SanctionService
                 }
                 // Case 3: Has time-in but no time-out - Half day sanction (12.50 pesos)
                 elseif ($record->time_in && !$record->time_out) {
-                    // Only create sanction if event is closed OR time-out window has passed
-                    if ($event->status === 'closed' || $now->gt($timeOutEnd)) {
-                        $sanction = $this->createSanction(
-                            $member->member_id,
-                            $eventId,
-                            12.50,
-                            'No time out'
-                        );
-                        
-                        if ($sanction) {
-                            $sanctionsCreated[] = $sanction;
-                        }
+                    // Create sanction if event is being force closed or time-out window has passed
+                    $sanction = $this->createSanction(
+                        $member->member_id,
+                        $eventId,
+                        12.50,
+                        'No time out'
+                    );
+                    
+                    if ($sanction) {
+                        $sanctionsCreated[] = $sanction;
                     }
                 }
                 // Case 4: No time-in and no time-out - Absent (25 pesos)

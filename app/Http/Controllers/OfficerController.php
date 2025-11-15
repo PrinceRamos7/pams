@@ -2,30 +2,52 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\OfficerHistory;
+use App\Models\Officer;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class OfficerController extends Controller
 {
+    // Position order for sorting
+    private function getPositionOrder()
+    {
+        return [
+            'President' => 1,
+            'Vice President - Internal' => 2,
+            'Vice President - External' => 3,
+            'Secretary' => 4,
+            'Treasurer' => 5,
+            'Auditor' => 6,
+            'Business Manager' => 7,
+            'Public Information Officer (PIO)' => 8,
+            'Attendance Officer' => 9,
+            'PITON Representative' => 10,
+            'Media Team Director' => 11,
+            'Media Team Managing Director' => 12,
+        ];
+    }
+
     // Return current officers
     public function current()
     {
         try {
-            $officers = OfficerHistory::with('member', 'batch')
-                ->whereNull('term_end') // only current term
+            $officers = Officer::with('member')
                 ->get();
+
+            $positionOrder = $this->getPositionOrder();
 
             $data = $officers->map(function ($officer) {
                 return [
-                    'officer_id' => $officer->id,
+                    'officer_id' => $officer->officer_id,
                     'position' => $officer->position,
-                    'member_id' => $officer->member->id,
+                    'member_id' => $officer->member->member_id,
                     'member_name' => $officer->member->firstname . ' ' . $officer->member->lastname,
-                    'batch_name' => $officer->batch->name ?? '',
+                    'batch_name' => '',
                     'created_at' => $officer->created_at,
                 ];
-            });
+            })->sortBy(function ($officer) use ($positionOrder) {
+                return $positionOrder[$officer['position']] ?? 999;
+            })->values();
 
             return response()->json($data);
         } catch (\Exception $e) {
@@ -36,55 +58,136 @@ class OfficerController extends Controller
     // Store new officer
     public function store(Request $request)
     {
+        // Positions that can have 2 members
+        $multiMemberPositions = ['Public Information Officer (PIO)', 'Business Manager'];
+        
+        // Check if position allows multiple members
+        $positionCount = Officer::where('position', $request->position)->count();
+        
+        if (in_array($request->position, $multiMemberPositions)) {
+            // PIO and Business Manager can have up to 2 members
+            if ($positionCount >= 2) {
+                return redirect()->back()->withErrors([
+                    'position' => 'This position already has 2 members assigned.'
+                ]);
+            }
+        } else {
+            // All other positions can only have 1 member
+            if ($positionCount >= 1) {
+                return redirect()->back()->withErrors([
+                    'position' => 'This position is already assigned to another officer.'
+                ]);
+            }
+        }
+        
         $request->validate([
-            'member_id' => 'required|exists:members,id',
+            'member_id' => 'required|exists:members,member_id|unique:officers,member_id',
             'position' => 'required|string|max:255',
+        ], [
+            'member_id.unique' => 'This member already holds an officer position.',
         ]);
 
-        $officer = OfficerHistory::create([
+        $officer = Officer::create([
             'member_id' => $request->member_id,
-            'batch_id' => 1, // default batch
             'position' => $request->position,
-            'term_start' => now(),
-            'term_end' => null,
         ]);
 
-        return response()->json(['message' => 'Officer added successfully', 'officer' => $officer]);
+        // Reload officers data with sorting
+        $officers = Officer::with('member')->get();
+        $positionOrder = $this->getPositionOrder();
+        
+        $data = $officers->map(function ($officer) {
+            return [
+                'officer_id' => $officer->officer_id,
+                'position' => $officer->position,
+                'member_id' => $officer->member->member_id,
+                'member_name' => $officer->member->firstname . ' ' . $officer->member->lastname,
+                'batch_name' => '',
+                'created_at' => $officer->created_at,
+            ];
+        })->sortBy(function ($officer) use ($positionOrder) {
+            return $positionOrder[$officer['position']] ?? 999;
+        })->values();
+
+        return redirect()->back()->with([
+            'success' => 'Officer added successfully!',
+            'officers' => $data
+        ]);
     }
 
     // Show specific officer
-    public function show(OfficerHistory $officer)
+    public function show($id)
     {
-        return response()->json($officer->load('member', 'batch'));
+        $officer = Officer::findOrFail($id);
+        return response()->json($officer->load('member'));
     }
 
     // Update officer
-    public function update(Request $request, OfficerHistory $officer)
+    public function update(Request $request, $id)
     {
+        $officer = Officer::findOrFail($id);
+        
         $request->validate([
-            'member_id' => 'required|exists:members,id',
-            'batch_id' => 'required|exists:batches,id',
-            'position' => [
+            'member_id' => [
                 'required',
-                'string',
-                'max:255',
-                Rule::unique('officer_history')->where(function ($query) use ($request, $officer) {
-                    return $query->where('batch_id', $request->batch_id)
-                                 ->whereNull('term_end')
-                                 ->where('id', '<>', $officer->id);
-                }),
+                'exists:members,member_id',
+                Rule::unique('officers', 'member_id')->ignore($officer->officer_id, 'officer_id'),
             ],
+        ], [
+            'member_id.unique' => 'This member already holds an officer position.',
         ]);
 
-        $officer->update($request->only('member_id', 'batch_id', 'position'));
+        $officer->update($request->only('member_id'));
 
-        return response()->json(['message' => 'Officer updated successfully']);
+        // Reload officers data with sorting
+        $officers = Officer::with('member')->get();
+        $positionOrder = $this->getPositionOrder();
+        
+        $data = $officers->map(function ($officer) {
+            return [
+                'officer_id' => $officer->officer_id,
+                'position' => $officer->position,
+                'member_id' => $officer->member->member_id,
+                'member_name' => $officer->member->firstname . ' ' . $officer->member->lastname,
+                'batch_name' => '',
+                'created_at' => $officer->created_at,
+            ];
+        })->sortBy(function ($officer) use ($positionOrder) {
+            return $positionOrder[$officer['position']] ?? 999;
+        })->values();
+
+        return redirect()->back()->with([
+            'success' => 'Officer updated successfully!',
+            'officers' => $data
+        ]);
     }
 
     // Delete officer
-    public function destroy(OfficerHistory $officer)
+    public function destroy($id)
     {
+        $officer = Officer::findOrFail($id);
         $officer->delete();
-        return response()->json(['message' => 'Officer deleted successfully']);
+        
+        // Reload officers data with sorting
+        $officers = Officer::with('member')->get();
+        $positionOrder = $this->getPositionOrder();
+        
+        $data = $officers->map(function ($officer) {
+            return [
+                'officer_id' => $officer->officer_id,
+                'position' => $officer->position,
+                'member_id' => $officer->member->member_id,
+                'member_name' => $officer->member->firstname . ' ' . $officer->member->lastname,
+                'batch_name' => '',
+                'created_at' => $officer->created_at,
+            ];
+        })->sortBy(function ($officer) use ($positionOrder) {
+            return $positionOrder[$officer['position']] ?? 999;
+        })->values();
+        
+        return redirect()->back()->with([
+            'success' => 'Officer removed successfully!',
+            'officers' => $data
+        ]);
     }
 }

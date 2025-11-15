@@ -17,11 +17,7 @@
             position: relative;
         }
         .header-content {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
+            text-align: center;
         }
         .logo {
             width: 60px;
@@ -100,7 +96,7 @@
 <body>
     <div class="header">
         <div class="header-content">
-            <img src="{{ public_path('avatars/piton.png') }}" alt="PITON Logo" class="logo">
+            <img src="{{ public_path('avatars/piton.png') }}" alt="PITON Logo" class="logo" style="display: block; margin: 0 auto 10px;">
             <h1>Attendance Records</h1>
         </div>
         <p>Generated on: {{ $generatedAt }}</p>

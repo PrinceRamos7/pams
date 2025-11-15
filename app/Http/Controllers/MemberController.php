@@ -54,10 +54,19 @@ class MemberController extends Controller
             'status'       => 'required|string|max:20',
             'age'          => 'nullable|integer',
             'birthdate'    => 'nullable|date',
-            'phone_number' => 'nullable|string|max:20',
+            'phone_number' => 'nullable|string|max:20|unique:members,phone_number',
             'email'        => 'nullable|email|unique:members,email',
             'address'      => 'nullable|string|max:255',
             'year'         => 'nullable|string|max:50',
+        ], [
+            'student_id.required' => 'Student ID is required.',
+            'student_id.unique' => 'This Student ID is already registered.',
+            'email.unique' => 'This email address is already registered.',
+            'phone_number.unique' => 'This phone number is already registered.',
+            'firstname.required' => 'First name is required.',
+            'lastname.required' => 'Last name is required.',
+            'sex.required' => 'Sex is required.',
+            'status.required' => 'Status is required.',
         ]);
 
         Member::create($validated);
@@ -76,8 +85,10 @@ class MemberController extends Controller
     /**
      * Update the specified member.
      */
-    public function update(Request $request, Member $member)
+    public function update(Request $request, $member)
     {
+        $member = Member::where('member_id', $member)->firstOrFail();
+        
         $validated = $request->validate([
             'student_id'   => 'required|unique:members,student_id,' . $member->member_id . ',member_id',
             'firstname'    => 'required|string|max:255',
@@ -86,10 +97,19 @@ class MemberController extends Controller
             'status'       => 'required|string|max:20',
             'age'          => 'nullable|integer',
             'birthdate'    => 'nullable|date',
-            'phone_number' => 'nullable|string|max:20',
+            'phone_number' => 'nullable|string|max:20|unique:members,phone_number,' . $member->member_id . ',member_id',
             'email'        => 'nullable|email|unique:members,email,' . $member->member_id . ',member_id',
             'address'      => 'nullable|string|max:255',
             'year'         => 'nullable|string|max:50',
+        ], [
+            'student_id.required' => 'Student ID is required.',
+            'student_id.unique' => 'This Student ID is already registered.',
+            'email.unique' => 'This email address is already registered.',
+            'phone_number.unique' => 'This phone number is already registered.',
+            'firstname.required' => 'First name is required.',
+            'lastname.required' => 'Last name is required.',
+            'sex.required' => 'Sex is required.',
+            'status.required' => 'Status is required.',
         ]);
 
         $member->update($validated);
@@ -100,8 +120,9 @@ class MemberController extends Controller
     /**
      * Remove the specified member.
      */
-    public function destroy(Member $member)
+    public function destroy($member)
     {
+        $member = Member::where('member_id', $member)->firstOrFail();
         $member->delete();
         return redirect()->back()->with('success', 'Member deleted successfully!');
     }

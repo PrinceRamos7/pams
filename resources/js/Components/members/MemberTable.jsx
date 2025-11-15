@@ -4,10 +4,11 @@ import { Inertia } from "@inertiajs/inertia";
 import { router } from "@inertiajs/react";
 import { Transition } from "@headlessui/react";
 
-import AddMemberModal from "./AddMemberModal";
-import EditMemberModal from "./EditMemberModal";
+import AddMemberModal from "../members/AddMemberModal";
+import EditMemberModal from "../members/EditMemberModal";
 import ViewMemberModal from "./ViewMemberModal";
 import OfficerTable from "./OfficerTable";
+import NotificationModal from "../NotificationModal";
 
 export default function MemberTable({ members }) {
     const [selectedMember, setSelectedMember] = useState(null);
@@ -16,6 +17,12 @@ export default function MemberTable({ members }) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [notification, setNotification] = useState({ message: "", type: "" });
+    const [notificationModal, setNotificationModal] = useState({
+        isOpen: false,
+        type: "success",
+        title: "",
+        message: ""
+    });
     const [openMenuId, setOpenMenuId] = useState(null);
     const [formData, setFormData] = useState({
         student_id: "",
@@ -50,19 +57,13 @@ export default function MemberTable({ members }) {
         setOpenMenuId(openMenuId === memberId ? null : memberId);
     };
 
-    // --- Toggle officers function ---
-    const toggleOfficers = async () => {
-        if (showOfficers) {
-            setShowOfficers(false);
-            return;
-        }
-
+    // Fetch officers data
+    const fetchOfficers = async () => {
         try {
             const response = await fetch("/officers/current", {
                 headers: { Accept: "application/json" },
             });
 
-            // Check if response is JSON
             const contentType = response.headers.get("content-type");
             if (!contentType || !contentType.includes("application/json")) {
                 console.error(
@@ -74,11 +75,29 @@ export default function MemberTable({ members }) {
 
             const data = await response.json();
             setOfficers(data);
-            setShowOfficers(true);
         } catch (error) {
             console.error("Failed to fetch officers:", error);
         }
     };
+
+    // --- Toggle officers function ---
+    const toggleOfficers = async () => {
+        if (showOfficers) {
+            setShowOfficers(false);
+            return;
+        }
+
+        await fetchOfficers();
+        setShowOfficers(true);
+    };
+
+    // Refresh officers when showOfficers is true
+    useEffect(() => {
+        if (showOfficers) {
+            const interval = setInterval(fetchOfficers, 1000);
+            return () => clearInterval(interval);
+        }
+    }, [showOfficers]);
     // --- Modal Handlers ---
     const openViewModal = (member) => {
         setSelectedMember(member);
@@ -138,28 +157,19 @@ export default function MemberTable({ members }) {
         setTimeout(() => setNotification({ message: "", type: "" }), 4000);
     };
 
-    // --- Submit Functions ---
-    const handleAddSubmit = () => {
-        if (
-            !formData.student_id ||
-            !formData.firstname ||
-            !formData.lastname ||
-            !formData.sex ||
-            !formData.status
-        ) {
-            showNotification("Please fill all required fields.", "error");
-            return;
-        }
-        Inertia.post("/members", formData, {
-            onSuccess: () => {
-                closeAddModal();
-                showNotification("Member added successfully!");
-            },
-            onError: () => showNotification("Failed to add member.", "error"),
+    const showNotificationModal = (title, message, type = "success") => {
+        setNotificationModal({
+            isOpen: true,
+            type,
+            title,
+            message
         });
     };
 
-    const handleEditSubmit = () => {
+    // --- Submit Functions ---
+    const handleAddSubmit = (e) => {
+        if (e) e.preventDefault();
+        
         if (
             !formData.student_id ||
             !formData.firstname ||
@@ -167,28 +177,149 @@ export default function MemberTable({ members }) {
             !formData.sex ||
             !formData.status
         ) {
-            showNotification("Please fill all required fields.", "error");
+            showNotificationModal("Validation Error", "Please fill all required fields.", "error");
             return;
         }
-        Inertia.put(`/members/${selectedMember.member_id}`, formData, {
+        
+        const memberName = `${formData.firstname} ${formData.lastname}`;
+        
+        router.post("/members", formData, {
+            preserveScroll: true,
             onSuccess: () => {
-                showNotification("Member updated successfully!");
-                closeEditModal();
+                closeAddModal();
+                setTimeout(() => {
+                    showNotificationModal("Success!", `${memberName} has been added successfully!`, "success");
+                }, 100);
             },
-            onError: () =>
-                showNotification("Failed to update member.", "error"),
+            onError: (errors) => {
+                console.log('Full error object:', errors);
+                closeAddModal();
+                setTimeout(() => {
+                    // Check for specific validation errors
+                    let errorMessage = "Failed to add member. Please try again.";
+                    
+                    // Handle different error structures
+                    if (typeof errors === 'object' && errors !== null) {
+                        // Check if errors has the field directly
+                        if (errors.student_id) {
+                            errorMessage = Array.isArray(errors.student_id) ? errors.student_id[0] : errors.student_id;
+                        } else if (errors.email) {
+                            errorMessage = Array.isArray(errors.email) ? errors.email[0] : errors.email;
+                        } else if (errors.phone_number) {
+                            errorMessage = Array.isArray(errors.phone_number) ? errors.phone_number[0] : errors.phone_number;
+                        } else if (errors.firstname) {
+                            errorMessage = Array.isArray(errors.firstname) ? errors.firstname[0] : errors.firstname;
+                        } else if (errors.lastname) {
+                            errorMessage = Array.isArray(errors.lastname) ? errors.lastname[0] : errors.lastname;
+                        } else if (errors.sex) {
+                            errorMessage = Array.isArray(errors.sex) ? errors.sex[0] : errors.sex;
+                        } else if (errors.status) {
+                            errorMessage = Array.isArray(errors.status) ? errors.status[0] : errors.status;
+                        } else {
+                            // Get the first error message from any field
+                            const firstError = Object.values(errors)[0];
+                            if (firstError) {
+                                errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+                            }
+                        }
+                    }
+                    
+                    showNotificationModal("Error!", errorMessage, "error");
+                }, 100);
+            },
+        });
+    };
+
+    const handleEditSubmit = (e) => {
+        if (e) e.preventDefault();
+        
+        if (
+            !formData.student_id ||
+            !formData.firstname ||
+            !formData.lastname ||
+            !formData.sex ||
+            !formData.status
+        ) {
+            showNotificationModal("Validation Error", "Please fill all required fields.", "error");
+            return;
+        }
+        
+        const memberName = `${formData.firstname} ${formData.lastname}`;
+        
+        router.put(`/members/${selectedMember.member_id}`, formData, {
+            preserveScroll: true,
+            onSuccess: () => {
+                closeEditModal();
+                setTimeout(() => {
+                    showNotificationModal("Success!", `${memberName} has been updated successfully!`, "success");
+                }, 100);
+            },
+            onError: (errors) => {
+                console.log('Full error object:', errors);
+                closeEditModal();
+                setTimeout(() => {
+                    // Check for specific validation errors
+                    let errorMessage = "Failed to update member. Please try again.";
+                    
+                    // Handle different error structures
+                    if (typeof errors === 'object' && errors !== null) {
+                        // Check if errors has the field directly
+                        if (errors.student_id) {
+                            errorMessage = Array.isArray(errors.student_id) ? errors.student_id[0] : errors.student_id;
+                        } else if (errors.email) {
+                            errorMessage = Array.isArray(errors.email) ? errors.email[0] : errors.email;
+                        } else if (errors.phone_number) {
+                            errorMessage = Array.isArray(errors.phone_number) ? errors.phone_number[0] : errors.phone_number;
+                        } else if (errors.firstname) {
+                            errorMessage = Array.isArray(errors.firstname) ? errors.firstname[0] : errors.firstname;
+                        } else if (errors.lastname) {
+                            errorMessage = Array.isArray(errors.lastname) ? errors.lastname[0] : errors.lastname;
+                        } else if (errors.sex) {
+                            errorMessage = Array.isArray(errors.sex) ? errors.sex[0] : errors.sex;
+                        } else if (errors.status) {
+                            errorMessage = Array.isArray(errors.status) ? errors.status[0] : errors.status;
+                        } else {
+                            // Get the first error message from any field
+                            const firstError = Object.values(errors)[0];
+                            if (firstError) {
+                                errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+                            }
+                        }
+                    }
+                    
+                    showNotificationModal("Error!", errorMessage, "error");
+                }, 100);
+            },
         });
     };
 
     const handleDelete = () => {
-        if (!selectedMember) return;
-        Inertia.delete(`/members/${selectedMember.member_id}`, {
+        console.log('Delete function called', selectedMember);
+        
+        if (!selectedMember) {
+            console.log('No selected member');
+            return;
+        }
+        
+        const memberName = `${selectedMember.firstname} ${selectedMember.lastname}`;
+        console.log('Deleting member:', memberName, 'ID:', selectedMember.member_id);
+        
+        router.delete(`/members/${selectedMember.member_id}`, {
+            preserveScroll: true,
             onSuccess: () => {
-                showNotification("Member deleted successfully!");
+                console.log('Delete successful');
                 closeDeleteModal();
+                setTimeout(() => {
+                    showNotificationModal("Success!", `${memberName} has been deleted successfully!`, "success");
+                }, 100);
             },
-            onError: () =>
-                showNotification("Failed to delete member.", "error"),
+            onError: (errors) => {
+                console.log('Delete error:', errors);
+                closeDeleteModal();
+                setTimeout(() => {
+                    showNotificationModal("Error!", "Failed to delete member. Please try again.", "error");
+                }, 100);
+            },
         });
     };
 
@@ -229,7 +360,7 @@ export default function MemberTable({ members }) {
             </div>
 
             {/* Members Table */}
-            <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+            <div className="rounded-lg border border-gray-200 shadow-sm">
                 <table className="min-w-full text-sm">
                     <thead className="bg-blue-500 text-white font-semibold uppercase tracking-wider">
                         <tr>
@@ -374,46 +505,74 @@ export default function MemberTable({ members }) {
                 />
             )}
 
-            {/* Delete Modal */}
+            {/* Delete Confirmation Modal */}
             {isDeleteModalOpen && selectedMember && (
-                <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-red-600">
-                                Confirm Delete
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden">
+                        {/* Header */}
+                        <div className="bg-red-500 px-6 py-4 flex justify-between items-center">
+                            <h2 className="text-xl font-bold text-white">
+                                Confirm
                             </h2>
                             <button
                                 onClick={closeDeleteModal}
-                                className="text-gray-500 hover:text-gray-700"
+                                className="text-white hover:text-gray-200 transition"
                             >
-                                <X size={20} />
+                                <X size={24} />
                             </button>
                         </div>
-                        <p className="mb-6 text-gray-700">
-                            Are you sure you want to delete{" "}
-                            <strong>
-                                {selectedMember.firstname}{" "}
-                                {selectedMember.lastname}
-                            </strong>
-                            ?
-                        </p>
-                        <div className="flex justify-end space-x-2">
+                        
+                        {/* Content */}
+                        <div className="p-6">
+                            <div className="flex items-start gap-4">
+                                {/* Warning Icon */}
+                                <div className="flex-shrink-0">
+                                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                                        <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                
+                                {/* Message */}
+                                <div className="flex-1">
+                                    <p className="text-gray-700 text-base mb-2">
+                                        Are you sure you want to delete <strong>{selectedMember.firstname} {selectedMember.lastname}</strong>?
+                                    </p>
+                                    <p className="text-gray-500 text-sm">
+                                        You can't undo this action.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Footer */}
+                        <div className="px-6 pb-6 flex justify-end gap-3">
                             <button
                                 onClick={closeDeleteModal}
-                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                                className="px-6 py-2 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
                             >
-                                Cancel
+                                NO
                             </button>
                             <button
                                 onClick={handleDelete}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                                className="px-6 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition"
                             >
-                                Delete
+                                YES
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* Notification Modal */}
+            <NotificationModal
+                isOpen={notificationModal.isOpen}
+                onClose={() => setNotificationModal({ ...notificationModal, isOpen: false })}
+                type={notificationModal.type}
+                title={notificationModal.title}
+                message={notificationModal.message}
+            />
         </>
     );
 }

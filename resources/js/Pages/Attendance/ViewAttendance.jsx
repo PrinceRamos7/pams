@@ -145,25 +145,22 @@ export default function ViewAttendance({ event, attendanceRecords: paginatedReco
                                         <table className="min-w-full divide-y divide-gray-200">
                                             <thead className="bg-blue-500 text-white">
                                                 <tr>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                                                         #
                                                     </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                                                         Student ID
                                                     </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                                                         Name
                                                     </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                                                         Time In
                                                     </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                                                         Time Out
                                                     </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Photos
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                                                         Status
                                                     </th>
                                                 </tr>
@@ -208,29 +205,6 @@ export default function ViewAttendance({ event, attendanceRecords: paginatedReco
                                                                           record.time_out
                                                                       )
                                                                     : "N/A"}
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                                <div className="flex gap-2">
-                                                                    {record.photo && (
-                                                                        <button
-                                                                            onClick={() => setSelectedPhoto(getPhotoUrl(record.photo))}
-                                                                            className="text-blue-600 hover:text-blue-800 text-xs bg-blue-100 px-2 py-1 rounded"
-                                                                        >
-                                                                            Time In Photo
-                                                                        </button>
-                                                                    )}
-                                                                    {record.photo_out && (
-                                                                        <button
-                                                                            onClick={() => setSelectedPhoto(getPhotoUrl(record.photo_out))}
-                                                                            className="text-green-600 hover:text-green-800 text-xs bg-green-100 px-2 py-1 rounded"
-                                                                        >
-                                                                            Time Out Photo
-                                                                        </button>
-                                                                    )}
-                                                                    {!record.photo && !record.photo_out && (
-                                                                        <span className="text-gray-400 text-xs">No photos</span>
-                                                                    )}
-                                                                </div>
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap">
                                                                 <span

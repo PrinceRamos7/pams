@@ -3,6 +3,7 @@ import { Eye, Edit, Trash2, MoreVertical, Clock, Plus, Calendar, Users } from "l
 import { Transition } from "@headlessui/react";
 import { router } from "@inertiajs/react";
 import PasswordModal from "../PasswordModal";
+import NotificationModal from "../NotificationModal";
 
 export default function AttendanceTable() {
     const [events, setEvents] = useState([]);
@@ -25,6 +26,12 @@ export default function AttendanceTable() {
         event: null,
         title: '',
         message: ''
+    });
+    const [notificationModal, setNotificationModal] = useState({
+        isOpen: false,
+        type: "success",
+        title: "",
+        message: ""
     });
 
     useEffect(() => {
@@ -57,6 +64,15 @@ export default function AttendanceTable() {
     const showNotification = (message, type = "success") => {
         setNotification({ message, type });
         setTimeout(() => setNotification({ message: "", type: "" }), 4000);
+    };
+
+    const showNotificationModal = (title, message, type = "success") => {
+        setNotificationModal({
+            isOpen: true,
+            type,
+            title,
+            message
+        });
     };
 
     const verifyPassword = async (password) => {
@@ -148,9 +164,9 @@ export default function AttendanceTable() {
                 setShowForm(false);
                 setIsEditing(false);
                 setEditingEventId(null);
-                showNotification(data.message, "success");
+                showNotificationModal("Success!", data.message, "success");
             } else {
-                showNotification(isEditing ? "Failed to update event." : "Failed to add event.", "error");
+                showNotificationModal("Error!", isEditing ? "Failed to update event." : "Failed to add event.", "error");
             }
         } catch (err) {
             console.error(err);
@@ -211,9 +227,9 @@ export default function AttendanceTable() {
 
             if (data.success) {
                 setEvents((prev) => prev.filter(e => e.event_id !== event.event_id));
-                showNotification(data.message, "success");
+                showNotificationModal("Success!", data.message, "success");
             } else {
-                showNotification("Failed to delete event.", "error");
+                showNotificationModal("Error!", "Failed to delete event.", "error");
             }
         } catch (err) {
             console.error(err);
@@ -260,9 +276,9 @@ export default function AttendanceTable() {
             if (data.success) {
                 // Update the event in the list
                 setEvents((prev) => prev.map(e => e.event_id === event.event_id ? data.event : e));
-                showNotification(data.message, "success");
+                showNotificationModal("Success!", data.message, "success");
             } else {
-                showNotification(data.message || "Failed to open time-out window.", "error");
+                showNotificationModal("Error!", data.message || "Failed to open time-out window.", "error");
             }
         } catch (err) {
             console.error(err);
@@ -302,9 +318,9 @@ export default function AttendanceTable() {
             if (data.success) {
                 // Update the event in the list
                 setEvents((prev) => prev.map(e => e.event_id === event.event_id ? data.event : e));
-                showNotification(data.message, "success");
+                showNotificationModal("Success!", data.message, "success");
             } else {
-                showNotification(data.message || "Failed to reopen time-out window.", "error");
+                showNotificationModal("Error!", data.message || "Failed to reopen time-out window.", "error");
             }
         } catch (err) {
             console.error(err);
@@ -344,9 +360,9 @@ export default function AttendanceTable() {
             if (data.success) {
                 // Update the event in the list with the closed status
                 setEvents((prev) => prev.map(e => e.event_id === event.event_id ? data.event : e));
-                showNotification(data.message, "success");
+                showNotificationModal("Success!", data.message, "success");
             } else {
-                showNotification(data.message || "Failed to close event.", "error");
+                showNotificationModal("Error!", data.message || "Failed to close event.", "error");
             }
         } catch (err) {
             console.error(err);
@@ -357,6 +373,9 @@ export default function AttendanceTable() {
     };
 
     const isTimeInActive = (event) => {
+        // If event is closed, time in is not active
+        if (event.status === 'closed') return false;
+        
         if (!event.time_in || !event.date) return false;
         
         const now = new Date();
@@ -372,7 +391,8 @@ export default function AttendanceTable() {
             now: now.toLocaleString(),
             eventStart: eventDateTime.toLocaleString(),
             eventEnd: endTime.toLocaleString(),
-            isActive: now >= eventDateTime && now <= endTime
+            isActive: now >= eventDateTime && now <= endTime,
+            status: event.status
         });
         
         // Check if current time is within the window
@@ -383,6 +403,9 @@ export default function AttendanceTable() {
     };
 
     const isTimeOutActive = (event) => {
+        // If event is closed, time out is not active
+        if (event.status === 'closed') return false;
+        
         if (!event.time_out || !event.date) return false;
         
         const now = new Date();
@@ -398,7 +421,8 @@ export default function AttendanceTable() {
             now: now.toLocaleString(),
             eventStart: eventDateTime.toLocaleString(),
             eventEnd: endTime.toLocaleString(),
-            isActive: now >= eventDateTime && now <= endTime
+            isActive: now >= eventDateTime && now <= endTime,
+            status: event.status
         });
         
         // Check if current time is within the window
@@ -757,11 +781,11 @@ export default function AttendanceTable() {
                                                     <button
                                                         onClick={() => handleForceBeginTimeOut(event)}
                                                         className={`w-full text-left px-4 py-2 flex items-center gap-3 ${
-                                                            event.status === 'closed' 
+                                                            event.status === 'closed' || isTimeOutActive(event)
                                                                 ? 'opacity-50 cursor-not-allowed text-gray-400' 
                                                                 : 'hover:bg-blue-50 text-blue-600'
                                                         }`}
-                                                        disabled={event.status === 'closed'}
+                                                        disabled={event.status === 'closed' || isTimeOutActive(event)}
                                                     >
                                                         <Clock size={16} />
                                                         Force Begin Time Out
@@ -770,19 +794,24 @@ export default function AttendanceTable() {
                                                     <button
                                                         onClick={() => handleForceReopenTimeOut(event)}
                                                         className={`w-full text-left px-4 py-2 flex items-center gap-3 ${
-                                                            event.status === 'closed' 
+                                                            event.status === 'closed' || isTimeOutActive(event)
                                                                 ? 'opacity-50 cursor-not-allowed text-gray-400' 
                                                                 : 'hover:bg-purple-50 text-purple-600'
                                                         }`}
-                                                        disabled={event.status === 'closed'}
+                                                        disabled={event.status === 'closed' || isTimeOutActive(event)}
                                                     >
                                                         <Clock size={16} />
                                                         Force Reopen Time Out
                                                     </button>
                                                     
-                                                    <button
+                                                                    <button
                                                         onClick={() => handleForceClose(event)}
-                                                        className="w-full text-left px-4 py-2 hover:bg-orange-50 flex items-center gap-3 text-orange-600"
+                                                        className={`w-full text-left px-4 py-2 flex items-center gap-3 ${
+                                                            event.status === 'closed'
+                                                                ? 'opacity-50 cursor-not-allowed text-gray-400'
+                                                                : 'hover:bg-orange-50 text-orange-600'
+                                                        }`}
+                                                        disabled={event.status === 'closed'}
                                                     >
                                                         <Clock size={16} />
                                                         Force Close & Calculate
@@ -835,6 +864,15 @@ export default function AttendanceTable() {
                 title={passwordModal.title}
                 message={passwordModal.message}
                 actionText="Confirm"
+            />
+
+            {/* Notification Modal */}
+            <NotificationModal
+                isOpen={notificationModal.isOpen}
+                onClose={() => setNotificationModal({ ...notificationModal, isOpen: false })}
+                type={notificationModal.type}
+                title={notificationModal.title}
+                message={notificationModal.message}
             />
         </div>
     );

@@ -36,9 +36,9 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/members', [MemberController::class, 'index'])->name('members.index');
     Route::post('/members', [MemberController::class, 'store'])->name('members.store');
-    Route::get('/members/{id}', [MemberController::class, 'show'])->name('members.show');
-    Route::put('/members/{id}', [MemberController::class, 'update'])->name('members.update');
-    Route::delete('/members/{id}', [MemberController::class, 'destroy'])->name('members.destroy');
+    Route::get('/members/{member}', [MemberController::class, 'show'])->name('members.show');
+    Route::put('/members/{member}', [MemberController::class, 'update'])->name('members.update');
+    Route::delete('/members/{member}', [MemberController::class, 'destroy'])->name('members.destroy');
     Route::get('/members/{id}/register-face', function ($id) {
         $member = Member::findOrFail($id);
         return Inertia::render('Members/RegisterFace', ['member' => $member]);
@@ -47,12 +47,11 @@ Route::middleware('auth')->group(function () {
 
 //Officers
 Route::middleware('auth')->group(function () {
-Route::get('/officers/current', [OfficerController::class, 'currentOfficers']);
-Route::get('/officers/current', [OfficerController::class, 'current'])->middleware('auth');
 Route::get('/officers/current', [OfficerController::class, 'current']);
-Route::get('/officers/{officer}', [OfficerController::class, 'show']);
-Route::put('/officers/{officer}', [OfficerController::class, 'update']);
 Route::post('/officers', [OfficerController::class, 'store']);
+Route::get('/officers/{id}', [OfficerController::class, 'show']);
+Route::put('/officers/{id}', [OfficerController::class, 'update']);
+Route::delete('/officers/{id}', [OfficerController::class, 'destroy']);
 });
 
 //Batch

@@ -1,20 +1,8 @@
 import { usePage } from "@inertiajs/react";
 import * as React from "react";
-import {
-    AudioWaveform,
-    BookOpen,
-    Bot,
-    Command,
-    Frame,
-    GalleryVerticalEnd,
-    Map,
-    PieChart,
-    Settings2,
-    SquareTerminal,
-} from "lucide-react";
+import { SquareTerminal } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import { TeamSwitcher } from "@/components/team-switcher";
 import {
@@ -26,9 +14,8 @@ import {
 } from "@/components/ui/sidebar";
 
 export function AppSidebar({ ...props }) {
-    const { user } = usePage().props; // get logged-in user from Laravel
+    const { auth } = usePage().props;
 
-    // sample static data
     const data = {
         teams: [
             {
@@ -51,34 +38,33 @@ export function AppSidebar({ ...props }) {
                     },
                     { title: "Members", url: "/members" },
                     { title: "Sanctions", url: "/sanctions" },
-
                 ],
             },
         ],
-        projects: [],
     };
 
-    // Safe user object with fallbacks
     const currentUser = {
-        name: user?.name || "Guest",
-        email: user?.email || "guest@example.com",
-        avatar: user?.avatar || "/default-avatar.svg",
+        name: auth?.user?.name || "Guest",
+        email: auth?.user?.email || "guest@example.com",
+        avatar: "/avatars/piton.png",
     };
 
     return (
-        <Sidebar collapsible="icon" {...props}>
-            <SidebarHeader className="bg-blue-600 text-white">
+        <Sidebar 
+            collapsible="icon" 
+            className="!bg-blue-600 [&_[data-sidebar=sidebar]]:!bg-blue-600"
+            {...props}
+        >
+            <SidebarHeader className="!bg-blue-600 text-white">
                 <TeamSwitcher teams={data.teams} />
             </SidebarHeader>
-            <SidebarContent className="bg-blue-600 text-white">
+            <SidebarContent className="!bg-blue-600 text-white">
                 <NavMain items={data.navMain} />
-                <NavProjects projects={data.projects} />
             </SidebarContent>
-
-            <SidebarFooter className="bg-blue-600 text-white">
+            <SidebarFooter className="!bg-blue-600 text-white border-t border-blue-500">
                 <NavUser user={currentUser} />
             </SidebarFooter>
-            <SidebarRail className="bg-blue-600" />
+            <SidebarRail className="!bg-blue-600" />
         </Sidebar>
     );
 }

@@ -5,7 +5,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Officer extends Model
 {
-    protected $primaryKey = 'officer_id'; // important!
+    protected $primaryKey = 'officer_id';
+    
+    protected $fillable = [
+        'member_id',
+        'position',
+    ];
     
     public function member()
     {

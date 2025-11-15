@@ -22,7 +22,7 @@ Application
 │   ├── Sanctions Pages
 │   │   ├── Index (Events with Sanctions)
 │   │   └── EventDetail (Members with Sanctions)
-│   ├── Attendance Pages
+│   ├── Attendance Pages<!--  -->
 │   │   ├── ViewAttendance
 │   │   ├── AttendanceTable
 │   │   ├── TimeIn/TimeOut

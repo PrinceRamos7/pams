@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { router, Link } from "@inertiajs/react";
-import { toast } from "react-hot-toast";
 import { MoreVertical, Eye, Edit, Trash2, Filter } from "lucide-react";
 import PasswordModal from "../PasswordModal";
+import EditEventModal from "./EditEventModal";
+import NotificationModal from "../NotificationModal";
 
 export default function SanctionsTable({ eventSanctions, summary }) {
     const [filter, setFilter] = useState({
@@ -14,6 +15,7 @@ export default function SanctionsTable({ eventSanctions, summary }) {
     });
     const [openMenuId, setOpenMenuId] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
+    const [editingEvent, setEditingEvent] = useState(null);
     const [passwordModal, setPasswordModal] = useState({
         isOpen: false,
         eventId: null,
@@ -21,6 +23,21 @@ export default function SanctionsTable({ eventSanctions, summary }) {
         title: '',
         message: ''
     });
+    const [notificationModal, setNotificationModal] = useState({
+        isOpen: false,
+        type: "success",
+        title: "",
+        message: ""
+    });
+
+    const showNotificationModal = (title, message, type = "success") => {
+        setNotificationModal({
+            isOpen: true,
+            type,
+            title,
+            message
+        });
+    };
 
     // Close dropdown when clicking outside
     React.useEffect(() => {
@@ -87,14 +104,14 @@ export default function SanctionsTable({ eventSanctions, summary }) {
             const data = await response.json();
 
             if (data.success) {
-                toast.success('Sanctions deleted successfully');
-                router.reload();
+                showNotificationModal("Success!", "Sanctions deleted successfully", "success");
+                setTimeout(() => router.reload(), 1500);
             } else {
-                toast.error(data.message || 'Failed to delete sanctions');
+                showNotificationModal("Error!", data.message || "Failed to delete sanctions", "error");
             }
         } catch (error) {
             console.error('Delete error:', error);
-            toast.error('Failed to delete sanctions');
+            showNotificationModal("Error!", "Failed to delete sanctions", "error");
         }
     };
 
@@ -219,7 +236,7 @@ export default function SanctionsTable({ eventSanctions, summary }) {
                     No events with sanctions found
                 </div>
             ) : (
-                <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                <div className="rounded-lg border border-gray-200 shadow-sm">
                     <table className="min-w-full text-sm">
                         <thead className="bg-blue-500 text-white font-semibold uppercase tracking-wider">
                             <tr>
@@ -276,14 +293,16 @@ export default function SanctionsTable({ eventSanctions, summary }) {
                                                             View Members ({eventSanction.sanction_count})
                                                         </Link>
                                                         
-                                                        <Link
-                                                            href={route('attendance.index')}
-                                                            className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-3 text-gray-700"
-                                                            onClick={() => setOpenMenuId(null)}
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingEvent(eventSanction.event);
+                                                                setOpenMenuId(null);
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 hover:bg-blue-50 flex items-center gap-3 text-blue-600"
                                                         >
                                                             <Edit size={16} />
                                                             Edit Event
-                                                        </Link>
+                                                        </button>
                                                         
                                                         <div className="border-t border-gray-100 my-1"></div>
                                                         
@@ -305,6 +324,23 @@ export default function SanctionsTable({ eventSanctions, summary }) {
                     </table>
                 </div>
             )}
+
+            {/* Notification Modal - Positioned at top */}
+            <NotificationModal
+                isOpen={notificationModal.isOpen}
+                onClose={() => setNotificationModal({ ...notificationModal, isOpen: false })}
+                type={notificationModal.type}
+                title={notificationModal.title}
+                message={notificationModal.message}
+            />
+
+            {/* Edit Event Modal */}
+            <EditEventModal
+                event={editingEvent}
+                isOpen={!!editingEvent}
+                onClose={() => setEditingEvent(null)}
+                showNotificationModal={showNotificationModal}
+            />
 
             {/* Password Confirmation Modal */}
             <PasswordModal

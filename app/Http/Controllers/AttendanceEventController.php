@@ -132,8 +132,19 @@ class AttendanceEventController extends Controller
                 ], 400);
             }
             
-            // Update the time_out to current time to force open the window
+            // Check if time out window is already active
             $now = now();
+            $eventDateTime = \Carbon\Carbon::parse($event->date . ' ' . $event->time_out);
+            $endTime = $eventDateTime->copy()->addMinutes($event->time_out_duration ?? 30);
+            
+            if ($now->greaterThanOrEqualTo($eventDateTime) && $now->lessThanOrEqualTo($endTime)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Time-out window is already active.',
+                ], 400);
+            }
+            
+            // Update the time_out to current time to force open the window
             $event->update([
                 'time_out' => $now->format('H:i:s'),
             ]);
@@ -168,8 +179,19 @@ class AttendanceEventController extends Controller
                 ], 400);
             }
             
-            // Extend time-out duration by 30 minutes from now
+            // Check if time out window is still active
             $now = now();
+            $eventDateTime = \Carbon\Carbon::parse($event->date . ' ' . $event->time_out);
+            $endTime = $eventDateTime->copy()->addMinutes($event->time_out_duration ?? 30);
+            
+            if ($now->lessThanOrEqualTo($endTime)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Time-out window is still active. Cannot reopen until it expires.',
+                ], 400);
+            }
+            
+            // Extend time-out duration by 30 minutes from now
             $event->update([
                 'time_out' => $now->format('H:i:s'),
                 'time_out_duration' => 30, // Reset to 30 minutes
@@ -205,18 +227,27 @@ class AttendanceEventController extends Controller
                 ], 400);
             }
             
+            \Log::info('Force closing event', ['event_id' => $eventId, 'agenda' => $event->agenda]);
+            
             $sanctionService = app(\App\Services\SanctionService::class);
             
             // Calculate sanctions for this event
             $result = $sanctionService->calculateSanctionsForEvent($eventId);
             
+            \Log::info('Sanction calculation result', [
+                'event_id' => $eventId,
+                'success' => $result['success'],
+                'sanctions_created' => $result['sanctions_created'] ?? 0,
+                'message' => $result['message'] ?? 'No message'
+            ]);
+            
+            // Mark event as closed regardless of sanction calculation result
+            $event->update([
+                'status' => 'closed',
+                'closed_at' => now(),
+            ]);
+            
             if ($result['success']) {
-                // Mark event as closed
-                $event->update([
-                    'status' => 'closed',
-                    'closed_at' => now(),
-                ]);
-                
                 return response()->json([
                     'success' => true,
                     'message' => "Event '{$event->agenda}' closed. {$result['sanctions_created']} sanctions created.",
@@ -225,12 +256,18 @@ class AttendanceEventController extends Controller
                 ]);
             } else {
                 return response()->json([
-                    'success' => false,
-                    'message' => $result['message'],
-                ], 500);
+                    'success' => true,
+                    'message' => "Event '{$event->agenda}' closed, but sanction calculation had issues: {$result['message']}",
+                    'sanctions_created' => 0,
+                    'event' => $event->fresh(),
+                ]);
             }
         } catch (\Exception $e) {
-            \Log::error('Failed to force close event', ['error' => $e->getMessage(), 'eventId' => $eventId]);
+            \Log::error('Failed to force close event', [
+                'error' => $e->getMessage(),
+                'eventId' => $eventId,
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to close event: ' . $e->getMessage(),

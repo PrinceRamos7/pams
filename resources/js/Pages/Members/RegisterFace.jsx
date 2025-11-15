@@ -3,6 +3,7 @@ import { Head, router } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import { enrollFace, startCamera, stopCamera } from "../../utils/faceio";
 import FaceIOConfigCheck from "../../Components/FaceIOConfigCheck";
+import NotificationModal from "../../Components/NotificationModal";
 
 import {
     SidebarProvider,
@@ -23,8 +24,23 @@ export default function RegisterFace({ member }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [enrollmentSuccess, setEnrollmentSuccess] = useState(false);
     const [cameraActive, setCameraActive] = useState(false);
+    const [notificationModal, setNotificationModal] = useState({
+        isOpen: false,
+        type: "success",
+        title: "",
+        message: ""
+    });
     const videoRef = useRef(null);
     const streamRef = useRef(null);
+
+    const showNotificationModal = (title, message, type = "success") => {
+        setNotificationModal({
+            isOpen: true,
+            type,
+            title,
+            message
+        });
+    };
 
     const breadcrumbs = [
         { href: route("dashboard"), label: "Dashboard" },
@@ -112,7 +128,6 @@ export default function RegisterFace({ member }) {
 
             if (data.success) {
                 setEnrollmentSuccess(true);
-                toast.success("Face registered successfully!");
                 
                 // Stop camera
                 if (streamRef.current) {
@@ -120,11 +135,17 @@ export default function RegisterFace({ member }) {
                     setCameraActive(false);
                 }
                 
+                showNotificationModal(
+                    "Success!",
+                    `Face registered successfully for ${member.firstname} ${member.lastname}!`,
+                    "success"
+                );
+                
                 setTimeout(() => {
                     router.visit(route("members.index"));
-                }, 2000);
+                }, 2500);
             } else {
-                toast.error(data.message || "Failed to save face data");
+                showNotificationModal("Error!", data.message || "Failed to save face data", "error");
             }
 
         } catch (error) {
@@ -159,12 +180,16 @@ export default function RegisterFace({ member }) {
             const data = await response.json();
 
             if (data.success) {
-                toast.success("Face registration removed successfully!");
+                showNotificationModal(
+                    "Success!",
+                    `Face registration removed successfully for ${member.firstname} ${member.lastname}!`,
+                    "success"
+                );
                 setTimeout(() => {
                     router.visit(route("members.index"));
-                }, 1500);
+                }, 2500);
             } else {
-                toast.error(data.message || "Failed to remove face registration");
+                showNotificationModal("Error!", data.message || "Failed to remove face registration", "error");
             }
 
         } catch (error) {
@@ -340,6 +365,15 @@ export default function RegisterFace({ member }) {
                     </div>
                 </main>
             </SidebarInset>
+
+            {/* Notification Modal */}
+            <NotificationModal
+                isOpen={notificationModal.isOpen}
+                onClose={() => setNotificationModal({ ...notificationModal, isOpen: false })}
+                type={notificationModal.type}
+                title={notificationModal.title}
+                message={notificationModal.message}
+            />
         </SidebarProvider>
     );
 }
