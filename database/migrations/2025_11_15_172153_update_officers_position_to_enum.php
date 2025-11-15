@@ -38,3 +38,5 @@ return new class extends Migration
         Schema::table('officers', function (Blueprint $table) {
             $table->string('position')->change();
         });
+    }
+};

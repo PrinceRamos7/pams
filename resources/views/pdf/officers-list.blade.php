@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Members List</title>
+    <title>Officers List</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -70,47 +70,41 @@
 <body>
     <div class="header">
         <img src="{{ public_path('avatars/piton.png') }}" alt="PITON Logo" class="logo">
-        <h1>PITON Members List</h1>
+        <h1>PITON Current Officers</h1>
         <p>Generated on: {{ $generatedAt }}</p>
     </div>
 
     <div class="summary">
-        <p><strong>Total Members:</strong> {{ $members->count() }}</p>
+        <p><strong>Total Officers:</strong> {{ count($officers) }}</p>
     </div>
 
     <table>
         <thead>
             <tr>
                 <th>#</th>
-                <th>Student ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Year</th>
-                <th>Status</th>
+                <th>Position</th>
+                <th>Officer Name</th>
+                <th>Date Appointed</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($members as $index => $member)
+            @forelse($officers as $index => $officer)
             <tr>
                 <td>{{ $index + 1 }}</td>
-                <td>{{ $member->student_id }}</td>
-                <td>{{ $member->firstname }} {{ $member->lastname }}</td>
-                <td>{{ $member->email ?? 'N/A' }}</td>
-                <td>{{ $member->phone_number ?? 'N/A' }}</td>
-                <td>{{ $member->year ?? 'N/A' }}</td>
-                <td>{{ $member->status }}</td>
+                <td>{{ $officer['position'] }}</td>
+                <td>{{ $officer['member_name'] }}</td>
+                <td>{{ \Carbon\Carbon::parse($officer['created_at'])->format('F d, Y') }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="7" style="text-align: center;">No members found</td>
+                <td colspan="4" style="text-align: center;">No officers found</td>
             </tr>
             @endforelse
         </tbody>
     </table>
 
     <div class="footer">
-        <p>PITON Attendance Monitoring System - Members List</p>
+        <p>PITON Attendance Monitoring System - Officers List</p>
     </div>
 </body>
 </html>

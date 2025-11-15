@@ -27,6 +27,30 @@ class OfficerController extends Controller
         ];
     }
 
+    // Display officers index page
+    public function index()
+    {
+        $officers = Officer::with('member')->get();
+        $positionOrder = $this->getPositionOrder();
+
+        $data = $officers->map(function ($officer) {
+            return [
+                'officer_id' => $officer->officer_id,
+                'position' => $officer->position,
+                'member_id' => $officer->member->member_id,
+                'member_name' => $officer->member->firstname . ' ' . $officer->member->lastname,
+                'batch_name' => '',
+                'created_at' => $officer->created_at,
+            ];
+        })->sortBy(function ($officer) use ($positionOrder) {
+            return $positionOrder[$officer['position']] ?? 999;
+        })->values();
+
+        return \Inertia\Inertia::render('Officers/Index', [
+            'officers' => $data
+        ]);
+    }
+
     // Return current officers
     public function current()
     {
@@ -189,5 +213,42 @@ class OfficerController extends Controller
             'success' => 'Officer removed successfully!',
             'officers' => $data
         ]);
+    }
+
+    // Export Officers List to PDF
+    public function exportPDF()
+    {
+        try {
+            $officers = Officer::with('member')->get();
+            $positionOrder = $this->getPositionOrder();
+
+            $data = $officers->map(function ($officer) {
+                return [
+                    'officer_id' => $officer->officer_id,
+                    'position' => $officer->position,
+                    'member_id' => $officer->member->member_id,
+                    'member_name' => $officer->member->firstname . ' ' . $officer->member->lastname,
+                    'created_at' => $officer->created_at,
+                ];
+            })->sortBy(function ($officer) use ($positionOrder) {
+                return $positionOrder[$officer['position']] ?? 999;
+            })->values()->toArray();
+
+            $pdfData = [
+                'officers' => $data,
+                'generatedAt' => now()->format('F d, Y h:i A')
+            ];
+            
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.officers-list', $pdfData);
+            $pdf->setPaper('A4', 'portrait');
+
+            return $pdf->download('officers-list-' . now()->format('Y-m-d') . '.pdf');
+        } catch (\Exception $e) {
+            \Log::error('Officers PDF Export Error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Failed to generate PDF',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }

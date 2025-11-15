@@ -351,12 +351,21 @@ export default function MemberTable({ members }) {
             {/* Header */}
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold text-gray-800">Members</h1>
-                <button
-                    onClick={openAddModal}
-                    className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
-                >
-                    Add Member
-                </button>
+                <div className="flex gap-2">
+                    <a
+                        href={route('members.export-pdf')}
+                        target="_blank"
+                        className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition"
+                    >
+                        Export PDF
+                    </a>
+                    <button
+                        onClick={openAddModal}
+                        className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+                    >
+                        Add Member
+                    </button>
+                </div>
             </div>
 
             {/* Members Table */}

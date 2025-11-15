@@ -19,9 +19,9 @@ export function AppSidebar({ ...props }) {
     const data = {
         teams: [
             {
-                name: "PAMS",
+                name: "PIMS",
                 logo: "/avatars/piton.png",
-                plan: "PITON Attendance",
+                plan: "PITON Integrated",
             },
         ],
         navMain: [
@@ -38,6 +38,7 @@ export function AppSidebar({ ...props }) {
                     },
                     { title: "Members", url: "/members" },
                     { title: "Sanctions", url: "/sanctions" },
+                    { title: "Inventory", url: "/inventory" },
                 ],
             },
         ],
@@ -50,8 +51,8 @@ export function AppSidebar({ ...props }) {
     };
 
     return (
-        <Sidebar 
-            collapsible="icon" 
+        <Sidebar
+            collapsible="icon"
             className="!bg-blue-600 [&_[data-sidebar=sidebar]]:!bg-blue-600"
             {...props}
         >

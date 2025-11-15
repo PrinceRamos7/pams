@@ -13,8 +13,21 @@ export default function Pagination({ links, className = '' }) {
                         <span
                             key={index}
                             className="px-3 py-2 text-sm text-gray-400 cursor-not-allowed"
-                            dangerouslySetInnerHTML={{ __html: link.label }}
-                        />
+                        >
+                            {index === 0 ? (
+                                <>
+                                    <ChevronLeft className="w-4 h-4 inline" />
+                                    <span className="ml-1">Previous</span>
+                                </>
+                            ) : index === links.length - 1 ? (
+                                <>
+                                    <span className="mr-1">Next</span>
+                                    <ChevronRight className="w-4 h-4 inline" />
+                                </>
+                            ) : (
+                                <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                            )}
+                        </span>
                     );
                 }
 
@@ -24,7 +37,8 @@ export default function Pagination({ links, className = '' }) {
                         <Link
                             key={index}
                             href={link.url}
-                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            preserveScroll
+                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                         >
                             <ChevronLeft className="w-4 h-4" />
                             <span className="ml-1">Previous</span>
@@ -38,7 +52,8 @@ export default function Pagination({ links, className = '' }) {
                         <Link
                             key={index}
                             href={link.url}
-                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            preserveScroll
+                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                         >
                             <span className="mr-1">Next</span>
                             <ChevronRight className="w-4 h-4" />
@@ -51,13 +66,15 @@ export default function Pagination({ links, className = '' }) {
                     <Link
                         key={index}
                         href={link.url}
-                        className={`px-3 py-2 text-sm font-medium rounded-lg border ${
+                        preserveScroll
+                        className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
                             link.active
                                 ? 'bg-blue-600 text-white border-blue-600'
                                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                         }`}
-                        dangerouslySetInnerHTML={{ __html: link.label }}
-                    />
+                    >
+                        <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                    </Link>
                 );
             })}
         </div>

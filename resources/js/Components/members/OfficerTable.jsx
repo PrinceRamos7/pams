@@ -92,12 +92,21 @@ export default function OfficerTable({ officers }) {
                 <h3 className="text-lg font-bold text-blue-600">
                     👥 Current Officers
                 </h3>
-                <button
-                    onClick={openAddModal}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold"
-                >
-                    <Plus size={18} /> Add Officer
-                </button>
+                <div className="flex gap-2">
+                    <a
+                        href={route('officers.export-pdf')}
+                        target="_blank"
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold"
+                    >
+                        Export PDF
+                    </a>
+                    <button
+                        onClick={openAddModal}
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold"
+                    >
+                        <Plus size={18} /> Add Officer
+                    </button>
+                </div>
             </div>
 
             <table className="w-full text-sm">
@@ -106,7 +115,6 @@ export default function OfficerTable({ officers }) {
                         <th className="p-3">Officer ID</th>
                         <th className="p-3">Position</th>
                         <th className="p-3">Member Name</th>
-                        <th className="p-3">Batch Name</th>
                         <th className="p-3">Created At</th>
                         <th className="p-3 text-center">Action</th>
                     </tr>
@@ -121,7 +129,6 @@ export default function OfficerTable({ officers }) {
                                 <td className="p-3">{officer.officer_id}</td>
                                 <td className="p-3">{officer.position}</td>
                                 <td className="p-3">{officer.member_name}</td>
-                                <td className="p-3">{officer.batch_name}</td>
                                 <td className="p-3">
                                     {new Date(
                                         officer.created_at
@@ -167,7 +174,7 @@ export default function OfficerTable({ officers }) {
                     ) : (
                         <tr>
                             <td
-                                colSpan="6"
+                                colSpan="5"
                                 className="text-center p-3 text-gray-500"
                             >
                                 No current officers found.

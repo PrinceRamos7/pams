@@ -35,6 +35,7 @@ Route::middleware('auth')->group(function () {
 //Members
 Route::middleware('auth')->group(function () {
     Route::get('/members', [MemberController::class, 'index'])->name('members.index');
+    Route::get('/members/export-pdf', [MemberController::class, 'exportPDF'])->name('members.export-pdf');
     Route::post('/members', [MemberController::class, 'store'])->name('members.store');
     Route::get('/members/{member}', [MemberController::class, 'show'])->name('members.show');
     Route::put('/members/{member}', [MemberController::class, 'update'])->name('members.update');
@@ -47,6 +48,8 @@ Route::middleware('auth')->group(function () {
 
 //Officers
 Route::middleware('auth')->group(function () {
+Route::get('/officers', [OfficerController::class, 'index'])->name('officers.index');
+Route::get('/officers/export-pdf', [OfficerController::class, 'exportPDF'])->name('officers.export-pdf');
 Route::get('/officers/current', [OfficerController::class, 'current']);
 Route::post('/officers', [OfficerController::class, 'store']);
 Route::get('/officers/{id}', [OfficerController::class, 'show']);
@@ -183,16 +186,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/sanctions/event/{eventId}/export-pdf', [SanctionController::class, 'exportEventSanctionsPDF'])->name('sanctions.event.export-pdf');
 });
 
-// Members PDF Export
-Route::middleware('auth')->group(function () {
-    Route::get('/members/export-pdf', [MemberController::class, 'exportPDF'])->name('members.export-pdf');
-    
-    // Test PDF route
-    Route::get('/test-pdf', function() {
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.test-pdf');
-        return $pdf->stream('test.pdf');
-    });
-});
+
 
 // Attendance PDF Export
 Route::middleware('auth')->group(function () {

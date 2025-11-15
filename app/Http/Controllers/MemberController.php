@@ -153,15 +153,15 @@ class MemberController extends Controller
                 'generatedAt' => now()->format('F d, Y h:i A')
             ];
             
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.members-list-simple', $data);
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.members-list', $data);
             
             \Log::info('PDF Export - View loaded, setting paper');
             
             $pdf->setPaper('A4', 'landscape');
             
-            \Log::info('PDF Export - Streaming PDF');
+            \Log::info('PDF Export - Downloading PDF');
 
-            return $pdf->stream('members-list-' . now()->format('Y-m-d') . '.pdf');
+            return $pdf->download('members-list-' . now()->format('Y-m-d') . '.pdf');
         } catch (\Exception $e) {
             \Log::error('PDF Export Error: ' . $e->getMessage());
             \Log::error('PDF Export Stack: ' . $e->getTraceAsString());
