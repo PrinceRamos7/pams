@@ -48,18 +48,22 @@ export default function AddMemberModal({
                                 name: "student_id",
                                 type: "text",
                                 required: true,
+                                placeholder: "23-00001",
+                                pattern: "\\d{2}-\\d{5}",
                             },
                             {
                                 label: "First Name",
                                 name: "firstname",
                                 type: "text",
                                 required: true,
+                                pattern: "[a-zA-Z\\s]+",
                             },
                             {
                                 label: "Last Name",
                                 name: "lastname",
                                 type: "text",
                                 required: true,
+                                pattern: "[a-zA-Z\\s]+",
                             },
                             {
                                 label: "Sex",
@@ -84,13 +88,6 @@ export default function AddMemberModal({
                                     "Third Year",
                                     "Fourth Year",
                                 ],
-                            },
-                            {
-                                label: "Status",
-                                name: "status",
-                                type: "select",
-                                options: ["Active", "Inactive"],
-                                required: true,
                             },
                         ].map((field) => (
                             <div
@@ -131,6 +128,15 @@ export default function AddMemberModal({
                                         value={formData[field.name]}
                                         onChange={handleChange}
                                         required={field.required}
+                                        placeholder={field.placeholder}
+                                        pattern={field.pattern}
+                                        title={
+                                            field.name === "student_id"
+                                                ? "Format: XX-XXXXX (e.g., 23-00001)"
+                                                : field.name === "firstname" || field.name === "lastname"
+                                                ? "Only letters and spaces allowed"
+                                                : undefined
+                                        }
                                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                     />
                                 )}
@@ -142,8 +148,19 @@ export default function AddMemberModal({
                 {/* Right Column */}
                 <div className="w-1/2 p-6 bg-blue-600 text-white space-y-4">
                     <h2 className="text-xl font-bold">Contact Details</h2>
+                    <div className="bg-blue-500 p-3 rounded-md text-sm">
+                        <p className="font-semibold mb-1">Note:</p>
+                        <p>• Status will be automatically set to Active</p>
+                        <p>• Phone must be 11 digits starting with 09</p>
+                    </div>
                     {[
-                        { label: "Phone", name: "phone_number", type: "text" },
+                        { 
+                            label: "Phone", 
+                            name: "phone_number", 
+                            type: "text",
+                            placeholder: "09123456789",
+                            pattern: "09\\d{9}",
+                        },
                         { label: "Email", name: "email", type: "email" },
                         { label: "Address", name: "address", type: "text" },
                     ].map((field) => (
@@ -156,6 +173,13 @@ export default function AddMemberModal({
                                 name={field.name}
                                 value={formData[field.name]}
                                 onChange={handleChange}
+                                placeholder={field.placeholder}
+                                pattern={field.pattern}
+                                title={
+                                    field.name === "phone_number"
+                                        ? "Phone must be 11 digits starting with 09"
+                                        : undefined
+                                }
                                 className="mt-1 block w-full px-3 py-2 rounded-md text-gray-800 focus:outline-none focus:ring-2 focus:ring-white sm:text-sm"
                             />
                         </div>

@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
-import { usePage, Head } from "@inertiajs/react";
-import { Toaster, toast } from "react-hot-toast";
+import React from "react";
+import { Head } from "@inertiajs/react";
+import { Toaster } from "react-hot-toast";
 
 import {
     SidebarProvider,
@@ -10,24 +10,15 @@ import {
 import { AppSidebar } from "../../components/app-sidebar";
 import { Separator } from "../../components/ui/separator";
 import Breadcrumbs from "../../components/Breadcrumbs";
-
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle,
 } from "../../components/ui/card";
-import OfficerTable from "../../Components/members/OfficerTable";
+import OfficerTable from "../../Components/Officers/OfficerTable";
 
-export default function OfficersIndex({ officers }) {
-    const { flash } = usePage().props;
-
-    // Flash messages
-    useEffect(() => {
-        if (flash?.success) toast.success(flash.success);
-        if (flash?.error) toast.error(flash.error);
-    }, [flash]);
-
+export default function OfficersList({ officers }) {
     const breadcrumbs = [
         { href: route("dashboard"), label: "Dashboard" },
         { label: "Officers" },
@@ -37,7 +28,7 @@ export default function OfficersIndex({ officers }) {
         <SidebarProvider>
             <Toaster position="top-right" />
             <AppSidebar />
-            <Head title="Officers" />
+            <Head title="Officers List" />
 
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center justify-between px-4 border-b">
@@ -51,15 +42,8 @@ export default function OfficersIndex({ officers }) {
                 <main className="w-full p-6">
                     <div className="max-w-7xl mx-auto">
                         <Card className="w-full h-auto">
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle>Current Officers</CardTitle>
-                                <a
-                                    href={route('officers.export-pdf')}
-                                    target="_blank"
-                                    className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition text-sm"
-                                >
-                                    Export PDF
-                                </a>
+                            <CardHeader>
+                                <CardTitle>Officers Management</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <OfficerTable officers={officers} />

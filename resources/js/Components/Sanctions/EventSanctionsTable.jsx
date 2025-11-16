@@ -12,6 +12,12 @@ export default function EventSanctionsTable({ sanctions, event }) {
     const [showFilters, setShowFilters] = useState(false);
     const [openMenuId, setOpenMenuId] = useState(null);
     const [editingSanction, setEditingSanction] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        type: '', // 'paid' or 'excused'
+        sanctionId: null,
+        memberName: ''
+    });
     const [editForm, setEditForm] = useState({
         amount: '',
         reason: '',
@@ -71,15 +77,35 @@ export default function EventSanctionsTable({ sanctions, event }) {
         }
     };
 
-    const handleMarkAsPaid = async (sanctionId) => {
-        if (!confirm('Mark this sanction as paid?')) return;
+    const openConfirmModal = (type, sanctionId, memberName) => {
+        setConfirmModal({
+            isOpen: true,
+            type,
+            sanctionId,
+            memberName
+        });
+    };
 
+    const closeConfirmModal = () => {
+        setConfirmModal({
+            isOpen: false,
+            type: '',
+            sanctionId: null,
+            memberName: ''
+        });
+    };
+
+    const handleConfirmAction = async () => {
+        const { type, sanctionId } = confirmModal;
         const csrfToken = document
             .querySelector('meta[name="csrf-token"]')
             ?.getAttribute("content");
 
+        const endpoint = type === 'paid' ? 'pay' : 'excuse';
+        const successMessage = type === 'paid' ? 'Sanction marked as paid' : 'Sanction marked as excused';
+
         try {
-            const response = await fetch(`/api/sanctions/${sanctionId}/pay`, {
+            const response = await fetch(`/api/sanctions/${sanctionId}/${endpoint}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -91,14 +117,17 @@ export default function EventSanctionsTable({ sanctions, event }) {
             const data = await response.json();
 
             if (data.success) {
-                toast.success('Sanction marked as paid');
+                toast.success(successMessage);
+                closeConfirmModal();
                 router.reload();
             } else {
                 toast.error(data.message || 'Failed to update sanction');
+                closeConfirmModal();
             }
         } catch (error) {
-            console.error('Failed to mark as paid:', error);
+            console.error('Failed to update sanction:', error);
             toast.error('Failed to update sanction');
+            closeConfirmModal();
         }
     };
 
@@ -151,7 +180,10 @@ export default function EventSanctionsTable({ sanctions, event }) {
                     </button>
                     <a
                         href={route('sanctions.event.export-pdf', event.event_id)}
-                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition"
+                        style={{ backgroundColor: '#F7CC08', color: '#000' }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E0B907'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F7CC08'}
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -201,6 +233,7 @@ export default function EventSanctionsTable({ sanctions, event }) {
                                 <option value="all">All Status</option>
                                 <option value="paid">Paid</option>
                                 <option value="unpaid">Unpaid</option>
+                                <option value="excused">Excused</option>
                             </select>
                         </div>
                     </div>
@@ -259,6 +292,10 @@ export default function EventSanctionsTable({ sanctions, event }) {
                                             <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                                 Paid
                                             </span>
+                                        ) : sanction.status === 'excused' ? (
+                                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                Excused
+                                            </span>
                                         ) : (
                                             <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                                 Unpaid
@@ -288,18 +325,32 @@ export default function EventSanctionsTable({ sanctions, event }) {
                                                             Edit Sanction
                                                         </button>
                                                         {sanction.status === 'unpaid' && (
-                                                            <button
-                                                                onClick={() => {
-                                                                    handleMarkAsPaid(sanction.sanction_id);
-                                                                    setOpenMenuId(null);
-                                                                }}
-                                                                className="w-full text-left px-4 py-2 hover:bg-blue-50 flex items-center gap-3 text-blue-600"
-                                                            >
-                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                                </svg>
-                                                                Mark as Paid
-                                                            </button>
+                                                            <>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        openConfirmModal('paid', sanction.sanction_id, `${sanction.member?.firstname} ${sanction.member?.lastname}`);
+                                                                        setOpenMenuId(null);
+                                                                    }}
+                                                                    className="w-full text-left px-4 py-2 hover:bg-blue-50 flex items-center gap-3 text-blue-600"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                    Mark as Paid
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        openConfirmModal('excused', sanction.sanction_id, `${sanction.member?.firstname} ${sanction.member?.lastname}`);
+                                                                        setOpenMenuId(null);
+                                                                    }}
+                                                                    className="w-full text-left px-4 py-2 hover:bg-purple-50 flex items-center gap-3 text-purple-600"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                    </svg>
+                                                                    Mark as Excused
+                                                                </button>
+                                                            </>
                                                         )}
                                                     </div>
                                                 </div>
@@ -310,6 +361,83 @@ export default function EventSanctionsTable({ sanctions, event }) {
                             ))}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Confirmation Modal */}
+            {confirmModal.isOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden">
+                        {/* Header */}
+                        <div className={`px-6 py-4 flex justify-between items-center ${
+                            confirmModal.type === 'paid' ? 'bg-blue-500' : 'bg-purple-500'
+                        }`}>
+                            <h2 className="text-xl font-bold text-white">
+                                Confirm Action
+                            </h2>
+                            <button
+                                onClick={closeConfirmModal}
+                                className="text-white hover:text-gray-200 transition"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="p-6">
+                            <div className="flex items-start gap-4">
+                                {/* Icon */}
+                                <div className="flex-shrink-0">
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                        confirmModal.type === 'paid' ? 'bg-blue-100' : 'bg-purple-100'
+                                    }`}>
+                                        <svg className={`w-6 h-6 ${
+                                            confirmModal.type === 'paid' ? 'text-blue-600' : 'text-purple-600'
+                                        }`} fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                
+                                {/* Message */}
+                                <div className="flex-1">
+                                    <p className="text-gray-700 text-base mb-2">
+                                        {confirmModal.type === 'paid' ? (
+                                            <>Mark <strong>{confirmModal.memberName}</strong>'s sanction as paid?</>
+                                        ) : (
+                                            <>Mark <strong>{confirmModal.memberName}</strong>'s sanction as excused?</>
+                                        )}
+                                    </p>
+                                    <p className="text-gray-500 text-sm">
+                                        {confirmModal.type === 'paid' 
+                                            ? 'This will mark the sanction as paid.'
+                                            : 'The amount will be set to ₱0.00 and marked as excused.'
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Footer */}
+                        <div className="px-6 pb-6 flex justify-end gap-3">
+                            <button
+                                onClick={closeConfirmModal}
+                                className="px-6 py-2 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmAction}
+                                className={`px-6 py-2 text-white font-semibold rounded-lg transition ${
+                                    confirmModal.type === 'paid' 
+                                        ? 'bg-blue-500 hover:bg-blue-600' 
+                                        : 'bg-purple-500 hover:bg-purple-600'
+                                }`}
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -382,6 +510,7 @@ export default function EventSanctionsTable({ sanctions, event }) {
                                 >
                                     <option value="unpaid">Unpaid</option>
                                     <option value="paid">Paid</option>
+                                    <option value="excused">Excused</option>
                                 </select>
                             </div>
 

@@ -47,27 +47,32 @@ class MemberController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'student_id'   => 'required|unique:members,student_id',
-            'firstname'    => 'required|string|max:255',
-            'lastname'     => 'required|string|max:255',
+            'student_id'   => ['required', 'unique:members,student_id', 'regex:/^\d{2}-\d{5}$/'],
+            'firstname'    => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
+            'lastname'     => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
             'sex'          => 'required|string|max:10',
-            'status'       => 'required|string|max:20',
             'age'          => 'nullable|integer',
             'birthdate'    => 'nullable|date',
-            'phone_number' => 'nullable|string|max:20|unique:members,phone_number',
+            'phone_number' => ['nullable', 'string', 'regex:/^09\d{9}$/', 'unique:members,phone_number'],
             'email'        => 'nullable|email|unique:members,email',
             'address'      => 'nullable|string|max:255',
             'year'         => 'nullable|string|max:50',
         ], [
             'student_id.required' => 'Student ID is required.',
             'student_id.unique' => 'This Student ID is already registered.',
-            'email.unique' => 'This email address is already registered.',
-            'phone_number.unique' => 'This phone number is already registered.',
+            'student_id.regex' => 'Student ID must be in format XX-XXXXX (e.g., 23-00001).',
             'firstname.required' => 'First name is required.',
+            'firstname.regex' => 'First name must contain only letters and spaces.',
             'lastname.required' => 'Last name is required.',
+            'lastname.regex' => 'Last name must contain only letters and spaces.',
+            'phone_number.regex' => 'Phone number must be 11 digits starting with 09.',
+            'phone_number.unique' => 'This phone number is already registered.',
+            'email.unique' => 'This email address is already registered.',
             'sex.required' => 'Sex is required.',
-            'status.required' => 'Status is required.',
         ]);
+
+        // Set status to Active by default
+        $validated['status'] = 'Active';
 
         Member::create($validated);
 
@@ -90,24 +95,28 @@ class MemberController extends Controller
         $member = Member::where('member_id', $member)->firstOrFail();
         
         $validated = $request->validate([
-            'student_id'   => 'required|unique:members,student_id,' . $member->member_id . ',member_id',
-            'firstname'    => 'required|string|max:255',
-            'lastname'     => 'required|string|max:255',
+            'student_id'   => ['required', 'unique:members,student_id,' . $member->member_id . ',member_id', 'regex:/^\d{2}-\d{5}$/'],
+            'firstname'    => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
+            'lastname'     => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
             'sex'          => 'required|string|max:10',
             'status'       => 'required|string|max:20',
             'age'          => 'nullable|integer',
             'birthdate'    => 'nullable|date',
-            'phone_number' => 'nullable|string|max:20|unique:members,phone_number,' . $member->member_id . ',member_id',
+            'phone_number' => ['nullable', 'string', 'regex:/^09\d{9}$/', 'unique:members,phone_number,' . $member->member_id . ',member_id'],
             'email'        => 'nullable|email|unique:members,email,' . $member->member_id . ',member_id',
             'address'      => 'nullable|string|max:255',
             'year'         => 'nullable|string|max:50',
         ], [
             'student_id.required' => 'Student ID is required.',
             'student_id.unique' => 'This Student ID is already registered.',
-            'email.unique' => 'This email address is already registered.',
-            'phone_number.unique' => 'This phone number is already registered.',
+            'student_id.regex' => 'Student ID must be in format XX-XXXXX (e.g., 23-00001).',
             'firstname.required' => 'First name is required.',
+            'firstname.regex' => 'First name must contain only letters and spaces.',
             'lastname.required' => 'Last name is required.',
+            'lastname.regex' => 'Last name must contain only letters and spaces.',
+            'phone_number.regex' => 'Phone number must be 11 digits starting with 09.',
+            'phone_number.unique' => 'This phone number is already registered.',
+            'email.unique' => 'This email address is already registered.',
             'sex.required' => 'Sex is required.',
             'status.required' => 'Status is required.',
         ]);

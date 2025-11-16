@@ -432,6 +432,17 @@ export default function AttendanceTable() {
         return testMode ? true : isActive;
     };
 
+    const hasTimeInStarted = (event) => {
+        // Check if the time-in period has started (not necessarily active, just started)
+        if (!event.time_in || !event.date) return false;
+        
+        const now = new Date();
+        const timeInDateTime = new Date(event.date + 'T' + event.time_in);
+        
+        // Return true if current time is past the time-in start time
+        return now >= timeInDateTime || testMode;
+    };
+
     const handleTimeIn = (event) => {
         if (!testMode && !isTimeInActive(event)) {
             showNotification("Time In period is not active or has expired", "error");
@@ -781,11 +792,11 @@ export default function AttendanceTable() {
                                                     <button
                                                         onClick={() => handleForceBeginTimeOut(event)}
                                                         className={`w-full text-left px-4 py-2 flex items-center gap-3 ${
-                                                            event.status === 'closed' || isTimeOutActive(event)
+                                                            event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event)
                                                                 ? 'opacity-50 cursor-not-allowed text-gray-400' 
                                                                 : 'hover:bg-blue-50 text-blue-600'
                                                         }`}
-                                                        disabled={event.status === 'closed' || isTimeOutActive(event)}
+                                                        disabled={event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event)}
                                                     >
                                                         <Clock size={16} />
                                                         Force Begin Time Out
@@ -794,11 +805,11 @@ export default function AttendanceTable() {
                                                     <button
                                                         onClick={() => handleForceReopenTimeOut(event)}
                                                         className={`w-full text-left px-4 py-2 flex items-center gap-3 ${
-                                                            event.status === 'closed' || isTimeOutActive(event)
+                                                            event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event)
                                                                 ? 'opacity-50 cursor-not-allowed text-gray-400' 
                                                                 : 'hover:bg-purple-50 text-purple-600'
                                                         }`}
-                                                        disabled={event.status === 'closed' || isTimeOutActive(event)}
+                                                        disabled={event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event)}
                                                     >
                                                         <Clock size={16} />
                                                         Force Reopen Time Out
@@ -807,11 +818,11 @@ export default function AttendanceTable() {
                                                                     <button
                                                         onClick={() => handleForceClose(event)}
                                                         className={`w-full text-left px-4 py-2 flex items-center gap-3 ${
-                                                            event.status === 'closed'
+                                                            event.status === 'closed' || !hasTimeInStarted(event)
                                                                 ? 'opacity-50 cursor-not-allowed text-gray-400'
                                                                 : 'hover:bg-orange-50 text-orange-600'
                                                         }`}
-                                                        disabled={event.status === 'closed'}
+                                                        disabled={event.status === 'closed' || !hasTimeInStarted(event)}
                                                     >
                                                         <Clock size={16} />
                                                         Force Close & Calculate

@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { Head, router } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import { enrollFace, startCamera, stopCamera } from "../../utils/faceio";
-import FaceIOConfigCheck from "../../Components/FaceIOConfigCheck";
 import NotificationModal from "../../Components/NotificationModal";
 
 import {
@@ -228,8 +227,6 @@ export default function RegisterFace({ member }) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <FaceIOConfigCheck />
-                                
                                 <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                                     <h3 className="font-semibold text-blue-800 mb-2">
                                         Member Information

@@ -1,21 +1,32 @@
 import React, { useState, useEffect } from "react";
-import { Edit, Plus, Trash2, X, MoreVertical } from "lucide-react";
+import { Edit, Trash2, X, MoreVertical, Users } from "lucide-react";
 import { router } from "@inertiajs/react";
 import EditOfficerModal from "./EditOfficerModal";
-import AddOfficerModal from "./AddOfficerModal";
+import BulkAddOfficersModal from "./BulkAddOfficersModal";
 import NotificationModal from "../NotificationModal";
 
 export default function OfficerTable({ officers }) {
     const [selectedOfficer, setSelectedOfficer] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [openMenuId, setOpenMenuId] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
     const [notificationModal, setNotificationModal] = useState({
         isOpen: false,
         type: "success",
         title: "",
         message: ""
+    });
+
+    // Filter officers based on search
+    const filteredOfficers = officers.filter((officer) => {
+        const matchesSearch = 
+            officer.officer_id?.toString().includes(searchTerm) ||
+            officer.position?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            officer.member_name?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        return matchesSearch;
     });
 
     // Close dropdown when clicking outside
@@ -53,8 +64,8 @@ export default function OfficerTable({ officers }) {
         setIsEditModalOpen(false);
     };
 
-    const openAddModal = () => setIsAddModalOpen(true);
-    const closeAddModal = () => setIsAddModalOpen(false);
+    const openBulkAddModal = () => setIsBulkAddModalOpen(true);
+    const closeBulkAddModal = () => setIsBulkAddModalOpen(false);
     
     const openDeleteModal = (officer) => {
         setSelectedOfficer(officer);
@@ -93,20 +104,43 @@ export default function OfficerTable({ officers }) {
                     👥 Current Officers
                 </h3>
                 <div className="flex gap-2">
+                    <button
+                        onClick={() => window.location.href = '/officers/org-chart'}
+                        className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-3 py-2 rounded-lg font-semibold shadow-lg"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Org Chart
+                    </button>
                     <a
                         href={route('officers.export-pdf')}
                         target="_blank"
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg font-semibold"
+                        style={{ backgroundColor: '#F7CC08', color: '#000' }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E0B907'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F7CC08'}
                     >
                         Export PDF
                     </a>
                     <button
-                        onClick={openAddModal}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold"
+                        onClick={openBulkAddModal}
+                        className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg font-semibold"
                     >
-                        <Plus size={18} /> Add Officer
+                        <Users size={18} /> Add Officers
                     </button>
                 </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="mb-4">
+                <input
+                    type="text"
+                    placeholder="Search by Officer ID, Position, or Member Name..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
             </div>
 
             <table className="w-full text-sm">
@@ -115,13 +149,13 @@ export default function OfficerTable({ officers }) {
                         <th className="p-3">Officer ID</th>
                         <th className="p-3">Position</th>
                         <th className="p-3">Member Name</th>
-                        <th className="p-3">Created At</th>
+                        <th className="p-3">Batch Name</th>
                         <th className="p-3 text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {officers.length > 0 ? (
-                        officers.map((officer) => (
+                    {filteredOfficers.length > 0 ? (
+                        filteredOfficers.map((officer) => (
                             <tr
                                 key={officer.officer_id}
                                 className="hover:bg-gray-50 even:bg-gray-50/40 transition-colors"
@@ -130,9 +164,7 @@ export default function OfficerTable({ officers }) {
                                 <td className="p-3">{officer.position}</td>
                                 <td className="p-3">{officer.member_name}</td>
                                 <td className="p-3">
-                                    {new Date(
-                                        officer.created_at
-                                    ).toLocaleDateString()}
+                                    {officer.batch_name || 'N/A'}
                                 </td>
                                 <td className="p-3 text-center">
                                     <div className="relative inline-block">
@@ -193,9 +225,10 @@ export default function OfficerTable({ officers }) {
                     showNotificationModal={showNotificationModal}
                 />
             )}
-            {isAddModalOpen && (
-                <AddOfficerModal
-                    closeModal={closeAddModal}
+
+            {isBulkAddModalOpen && (
+                <BulkAddOfficersModal
+                    closeModal={closeBulkAddModal}
                     existingOfficers={officers}
                     onNotify={showNotificationModal}
                 />

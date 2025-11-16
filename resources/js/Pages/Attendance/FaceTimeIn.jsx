@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { Head, router } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import { authenticateFace, startCamera, stopCamera } from "../../utils/faceio";
-import FaceIOConfigCheck from "../../Components/FaceIOConfigCheck";
 
 import {
     SidebarProvider,
@@ -171,8 +170,6 @@ export default function FaceTimeIn({ event }) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <FaceIOConfigCheck />
-                                
                                 <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
                                     <h3 className="font-semibold text-green-800 mb-2">
                                         {event.agenda}

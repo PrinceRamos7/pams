@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Batch extends Model
 {
@@ -15,9 +15,19 @@ class Batch extends Model
         'term',
     ];
 
-    // Relationship: A batch has many officer histories
-    public function officerHistories()
+    /**
+     * Get the officers for this batch
+     */
+    public function officers()
     {
-        return $this->hasMany(OfficerHistory::class);
+        return $this->hasMany(Officer::class, 'batch_id');
+    }
+
+    /**
+     * Get the officer history records for this batch
+     */
+    public function officerHistory()
+    {
+        return $this->hasMany(OfficerHistory::class, 'batch_id');
     }
 }

@@ -193,7 +193,7 @@ class SanctionController extends Controller
             $validated = $request->validate([
                 'amount' => 'required|numeric|min:0',
                 'reason' => 'required|string',
-                'status' => 'required|in:paid,unpaid',
+                'status' => 'required|in:paid,unpaid,excused',
             ]);
 
             $sanction = Sanction::findOrFail($sanctionId);
@@ -276,6 +276,54 @@ class SanctionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to mark sanction as paid: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Mark a sanction as excused (sets amount to 0 and status to excused)
+     */
+    public function markAsExcused(Request $request, $sanctionId)
+    {
+        try {
+            $sanction = Sanction::findOrFail($sanctionId);
+            
+            if ($sanction->status === 'excused') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sanction is already marked as excused'
+                ], 400);
+            }
+            
+            $originalAmount = $sanction->amount;
+            
+            $sanction->update([
+                'status' => 'excused',
+                'amount' => 0,
+                'payment_date' => now()
+            ]);
+            
+            Log::info('Sanction marked as excused', [
+                'sanction_id' => $sanctionId,
+                'member_id' => $sanction->member_id,
+                'original_amount' => $originalAmount,
+                'new_amount' => 0
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Sanction marked as excused successfully',
+                'sanction' => $sanction->fresh()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to mark sanction as excused', [
+                'sanction_id' => $sanctionId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to mark sanction as excused: ' . $e->getMessage()
             ], 500);
         }
     }

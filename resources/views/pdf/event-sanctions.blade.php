@@ -87,6 +87,10 @@
             background-color: #FEE2E2;
             color: #991B1B;
         }
+        .badge-excused {
+            background-color: #F3E8FF;
+            color: #6B21A8;
+        }
     </style>
 </head>
 <body>
@@ -123,9 +127,13 @@
                 <td>{{ $sanction->reason }}</td>
                 <td>PHP {{ number_format($sanction->amount, 2) }}</td>
                 <td>
-                    <span class="badge {{ $sanction->is_paid ? 'badge-paid' : 'badge-unpaid' }}">
-                        {{ $sanction->is_paid ? 'Paid' : 'Unpaid' }}
-                    </span>
+                    @if($sanction->status === 'paid')
+                        <span class="badge badge-paid">Paid</span>
+                    @elseif($sanction->status === 'excused')
+                        <span class="badge badge-excused">Excused</span>
+                    @else
+                        <span class="badge badge-unpaid">Unpaid</span>
+                    @endif
                 </td>
             </tr>
             @empty
@@ -142,11 +150,15 @@
             </tr>
             <tr>
                 <th colspan="4" style="text-align: right;">Paid Amount:</th>
-                <th colspan="2">PHP {{ number_format($sanctions->where('is_paid', true)->sum('amount'), 2) }}</th>
+                <th colspan="2">PHP {{ number_format($sanctions->where('status', 'paid')->sum('amount'), 2) }}</th>
+            </tr>
+            <tr>
+                <th colspan="4" style="text-align: right;">Excused Amount:</th>
+                <th colspan="2">PHP {{ number_format($sanctions->where('status', 'excused')->sum('amount'), 2) }}</th>
             </tr>
             <tr>
                 <th colspan="4" style="text-align: right;">Unpaid Amount:</th>
-                <th colspan="2">PHP {{ number_format($sanctions->where('is_paid', false)->sum('amount'), 2) }}</th>
+                <th colspan="2">PHP {{ number_format($sanctions->where('status', 'unpaid')->sum('amount'), 2) }}</th>
             </tr>
         </tfoot>
         @endif

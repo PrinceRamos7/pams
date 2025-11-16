@@ -22,9 +22,9 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -49,12 +49,23 @@ Route::middleware('auth')->group(function () {
 //Officers
 Route::middleware('auth')->group(function () {
 Route::get('/officers', [OfficerController::class, 'index'])->name('officers.index');
+Route::get('/officers/history', [OfficerController::class, 'history'])->name('officers.history');
+Route::get('/officers/history/export-pdf', [OfficerController::class, 'exportHistoryPDF'])->name('officers.history.export-pdf');
+Route::post('/officers/batch', [OfficerController::class, 'storeBatchOfficers'])->name('officers.batch.store');
+Route::get('/officers/org-chart', [OfficerController::class, 'organizationChart'])->name('officers.org-chart');
 Route::get('/officers/export-pdf', [OfficerController::class, 'exportPDF'])->name('officers.export-pdf');
 Route::get('/officers/current', [OfficerController::class, 'current']);
 Route::post('/officers', [OfficerController::class, 'store']);
+Route::post('/officers/bulk', [OfficerController::class, 'bulkStore']);
 Route::get('/officers/{id}', [OfficerController::class, 'show']);
 Route::put('/officers/{id}', [OfficerController::class, 'update']);
 Route::delete('/officers/{id}', [OfficerController::class, 'destroy']);
+});
+
+//Batches
+Route::middleware('auth')->group(function () {
+Route::get('/batches', [BatchController::class, 'index']);
+Route::post('/batches', [BatchController::class, 'store']);
 });
 
 //Batch
@@ -173,6 +184,7 @@ Route::prefix('api/sanctions')->middleware('auth')->group(function () {
     Route::get('/{sanctionId}', [SanctionController::class, 'show'])->name('api.sanctions.show');
     Route::put('/{sanctionId}', [SanctionController::class, 'update'])->name('api.sanctions.update');
     Route::put('/{sanctionId}/pay', [SanctionController::class, 'markAsPaid'])->name('api.sanctions.pay');
+    Route::put('/{sanctionId}/excuse', [SanctionController::class, 'markAsExcused'])->name('api.sanctions.excuse');
     Route::delete('/event/{eventId}', [SanctionController::class, 'deleteEventSanctions'])->name('api.sanctions.delete-event');
 });
 

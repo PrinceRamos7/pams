@@ -7,7 +7,6 @@ import { Transition } from "@headlessui/react";
 import AddMemberModal from "../members/AddMemberModal";
 import EditMemberModal from "../members/EditMemberModal";
 import ViewMemberModal from "./ViewMemberModal";
-import OfficerTable from "./OfficerTable";
 import NotificationModal from "../NotificationModal";
 
 export default function MemberTable({ members }) {
@@ -24,6 +23,8 @@ export default function MemberTable({ members }) {
         message: ""
     });
     const [openMenuId, setOpenMenuId] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [yearFilter, setYearFilter] = useState("all");
     const [formData, setFormData] = useState({
         student_id: "",
         firstname: "",
@@ -38,9 +39,18 @@ export default function MemberTable({ members }) {
         status: "",
     });
 
-    // Officers toggle state
-    const [showOfficers, setShowOfficers] = useState(false);
-    const [officers, setOfficers] = useState([]);
+    // Filter members based on search and year
+    const filteredMembers = members.filter((member) => {
+        const matchesSearch = 
+            member.student_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            member.firstname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            member.lastname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            member.email?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesYear = yearFilter === "all" || member.year === yearFilter;
+        
+        return matchesSearch && matchesYear;
+    });
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -57,47 +67,6 @@ export default function MemberTable({ members }) {
         setOpenMenuId(openMenuId === memberId ? null : memberId);
     };
 
-    // Fetch officers data
-    const fetchOfficers = async () => {
-        try {
-            const response = await fetch("/officers/current", {
-                headers: { Accept: "application/json" },
-            });
-
-            const contentType = response.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/json")) {
-                console.error(
-                    "Expected JSON but received:",
-                    await response.text()
-                );
-                return;
-            }
-
-            const data = await response.json();
-            setOfficers(data);
-        } catch (error) {
-            console.error("Failed to fetch officers:", error);
-        }
-    };
-
-    // --- Toggle officers function ---
-    const toggleOfficers = async () => {
-        if (showOfficers) {
-            setShowOfficers(false);
-            return;
-        }
-
-        await fetchOfficers();
-        setShowOfficers(true);
-    };
-
-    // Refresh officers when showOfficers is true
-    useEffect(() => {
-        if (showOfficers) {
-            const interval = setInterval(fetchOfficers, 1000);
-            return () => clearInterval(interval);
-        }
-    }, [showOfficers]);
     // --- Modal Handlers ---
     const openViewModal = (member) => {
         setSelectedMember(member);
@@ -174,8 +143,7 @@ export default function MemberTable({ members }) {
             !formData.student_id ||
             !formData.firstname ||
             !formData.lastname ||
-            !formData.sex ||
-            !formData.status
+            !formData.sex
         ) {
             showNotificationModal("Validation Error", "Please fill all required fields.", "error");
             return;
@@ -183,6 +151,7 @@ export default function MemberTable({ members }) {
         
         const memberName = `${formData.firstname} ${formData.lastname}`;
         
+        // Status is automatically set to Active on the backend
         router.post("/members", formData, {
             preserveScroll: true,
             onSuccess: () => {
@@ -355,7 +324,10 @@ export default function MemberTable({ members }) {
                     <a
                         href={route('members.export-pdf')}
                         target="_blank"
-                        className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition"
+                        className="px-4 py-2 font-semibold rounded-lg transition"
+                        style={{ backgroundColor: '#F7CC08', color: '#000' }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#E0B907'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = '#F7CC08'}
                     >
                         Export PDF
                     </a>
@@ -365,6 +337,32 @@ export default function MemberTable({ members }) {
                     >
                         Add Member
                     </button>
+                </div>
+            </div>
+
+            {/* Search and Filter */}
+            <div className="mb-4 flex gap-3">
+                <div className="flex-1">
+                    <input
+                        type="text"
+                        placeholder="Search by Student ID, Name, or Email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                </div>
+                <div className="w-48">
+                    <select
+                        value={yearFilter}
+                        onChange={(e) => setYearFilter(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                        <option value="all">All Years</option>
+                        <option value="First Year">First Year</option>
+                        <option value="Second Year">Second Year</option>
+                        <option value="Third Year">Third Year</option>
+                        <option value="Fourth Year">Fourth Year</option>
+                    </select>
                 </div>
             </div>
 
@@ -397,7 +395,14 @@ export default function MemberTable({ members }) {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
-                        {members.map((m, index) => (
+                        {filteredMembers.length === 0 ? (
+                            <tr>
+                                <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
+                                    No members found matching your search criteria.
+                                </td>
+                            </tr>
+                        ) : (
+                            filteredMembers.map((m, index) => (
                             <tr
                                 key={m.member_id || index}
                                 className="hover:bg-gray-50 transition"
@@ -474,22 +479,12 @@ export default function MemberTable({ members }) {
                                     </div>
                                 </td>
                             </tr>
-                        ))}
+                        ))
+                        )}
                     </tbody>
                 </table>
             </div>
-            {/* Toggle Officers Button */}
-            <div className="mt-4 flex justify-end">
-                <button
-                    onClick={toggleOfficers}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold"
-                >
-                    {showOfficers ? "Hide Officers" : "View Officers"}
-                </button>
-            </div>
 
-            {/* Officers Table */}
-            {showOfficers && <OfficerTable officers={officers} />}
             {/* Modals */}
             {isAddModalOpen && (
                 <AddMemberModal

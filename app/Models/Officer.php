@@ -10,6 +10,7 @@ class Officer extends Model
     protected $fillable = [
         'member_id',
         'position',
+        'batch_id',
     ];
     
     public function member()
@@ -19,6 +20,6 @@ class Officer extends Model
 
     public function batch()
     {
-        return $this->belongsTo(Batch::class, 'batch_id', 'id');
+        return $this->belongsTo(Batch::class, 'batch_id');
     }
 }

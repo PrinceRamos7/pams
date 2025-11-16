@@ -1,6 +1,6 @@
 import { usePage } from "@inertiajs/react";
 import * as React from "react";
-import { SquareTerminal } from "lucide-react";
+import { SquareTerminal, Calendar, Users, Package } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
@@ -24,22 +24,55 @@ export function AppSidebar({ ...props }) {
                 plan: "PITON Integrated",
             },
         ],
+
         navMain: [
             {
-                title: "Main Menu",
-                url: "#",
+                title: "Dashboard",
+                url: "/dashboard",
                 icon: SquareTerminal,
                 isActive: true,
+            },
+            {
+                title: "Attendance",
+                url: "#",
+                icon: Calendar,
+                isActive: false,
                 items: [
-                    { title: "Dashboard", url: "#" },
                     {
-                        title: "Attendance",
+                        title: "Events",
                         url: route("attendance.index"),
                     },
-                    { title: "Members", url: "/members" },
-                    { title: "Sanctions", url: "/sanctions" },
-                    { title: "Inventory", url: "/inventory" },
+                    {
+                        title: "Sanctions",
+                        url: "/sanctions",
+                    },
                 ],
+            },
+            {
+                title: "Member Management",
+                url: "#",
+                icon: Users,
+                isActive: false,
+                items: [
+                    {
+                        title: "Members",
+                        url: "/members",
+                    },
+                    {
+                        title: "Officers",
+                        url: "/officers",
+                    },
+                    {
+                        title: "Officers History",
+                        url: "/officers/history",
+                    },
+                ],
+            },
+            {
+                title: "Inventory",
+                url: "/inventory",
+                icon: Package,
+                isActive: false,
             },
         ],
     };
@@ -53,19 +86,19 @@ export function AppSidebar({ ...props }) {
     return (
         <Sidebar
             collapsible="icon"
-            className="!bg-blue-600 [&_[data-sidebar=sidebar]]:!bg-blue-600"
+            className="!bg-[#2563eb] [&_[data-sidebar=sidebar]]:!bg-[#2563eb]"
             {...props}
         >
-            <SidebarHeader className="!bg-blue-600 text-white">
+            <SidebarHeader className="!bg-[#2563eb] text-white">
                 <TeamSwitcher teams={data.teams} />
             </SidebarHeader>
-            <SidebarContent className="!bg-blue-600 text-white">
+            <SidebarContent className="!bg-[#2563eb] text-white">
                 <NavMain items={data.navMain} />
             </SidebarContent>
-            <SidebarFooter className="!bg-blue-600 text-white border-t border-blue-500">
+            <SidebarFooter className="!bg-[#2563eb] text-white border-t border-[#1d4ed8]">
                 <NavUser user={currentUser} />
             </SidebarFooter>
-            <SidebarRail className="!bg-blue-600" />
+            <SidebarRail className="!bg-[#2563eb]" />
         </Sidebar>
     );
 }

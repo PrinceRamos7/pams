@@ -4,60 +4,38 @@ namespace App\Http\Controllers;
 
 use App\Models\Batch;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 
 class BatchController extends Controller
 {
-    // Display all batches
+    /**
+     * Display a listing of batches
+     */
     public function index()
     {
-        $batches = Batch::all();
-        return Inertia::render('Batches/Index', compact('batches'));
+        $batches = Batch::orderBy('year', 'desc')
+            ->orderBy('name', 'desc')
+            ->get();
+        
+        return response()->json($batches);
     }
 
-    // Show a specific batch with officer history
-    public function show($id)
-    {
-        $batch = Batch::with('officerHistories.officer')->findOrFail($id);
-        return Inertia::render('Batches/Show', compact('batch'));
-    }
-
-    // Store a new batch
+    /**
+     * Store a newly created batch
+     */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'year' => 'nullable|integer',
             'term' => 'nullable|string|max:255',
         ]);
 
-        Batch::create($request->all());
+        $batch = Batch::create($validated);
 
-        return redirect()->back()->with('success', 'Batch created successfully.');
-    }
-
-    // Update a batch
-    public function update(Request $request, $id)
-    {
-        $batch = Batch::findOrFail($id);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'year' => 'nullable|integer',
-            'term' => 'nullable|string|max:255',
+        return response()->json([
+            'success' => true,
+            'batch' => $batch,
+            'message' => 'Batch created successfully'
         ]);
-
-        $batch->update($request->all());
-
-        return redirect()->back()->with('success', 'Batch updated successfully.');
-    }
-
-    // Delete a batch
-    public function destroy($id)
-    {
-        $batch = Batch::findOrFail($id);
-        $batch->delete();
-
-        return redirect()->back()->with('success', 'Batch deleted successfully.');
     }
 }
