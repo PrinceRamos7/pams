@@ -21,9 +21,27 @@ export default function ViewMemberModal({ member, closeModal }) {
                     {/* Avatar */}
                     <div className="flex justify-center mb-4">
                         <div className="relative">
-                            <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg">
-                                <User size={64} className="text-white" />
-                            </div>
+                            {member.face_image ? (
+                                <div className="w-32 h-32 rounded-full overflow-hidden shadow-lg border-4 border-white">
+                                    <img 
+                                        src={member.face_image} 
+                                        alt={`${member.firstname} ${member.lastname}`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            ) : member.profile_picture ? (
+                                <div className="w-32 h-32 rounded-full overflow-hidden shadow-lg border-4 border-white">
+                                    <img 
+                                        src={`/storage/${member.profile_picture}`} 
+                                        alt={`${member.firstname} ${member.lastname}`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg">
+                                    <User size={64} className="text-white" />
+                                </div>
+                            )}
                             {/* Face Registration Badge */}
                             {member.faceio_id && (
                                 <div className="absolute bottom-0 right-0 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center shadow-lg border-4 border-white">

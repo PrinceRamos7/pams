@@ -43,8 +43,12 @@ export function AppSidebar({ ...props }) {
                         url: route("attendance.index"),
                     },
                     {
-                        title: "Sanctions",
+                        title: "Events with Sanctions",
                         url: "/sanctions",
+                    },
+                    {
+                        title: "Member Sanctions",
+                        url: "/sanctions/members",
                     },
                 ],
             },

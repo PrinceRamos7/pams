@@ -381,6 +381,11 @@ export function ShowAnalytics({
                                             <p className="text-xs text-gray-600">
                                                 {member.student_id}
                                             </p>
+                                            {member.type && (
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Type: {member.type}
+                                                </p>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <div className="text-right">
@@ -400,6 +405,19 @@ export function ShowAnalytics({
                                                     {member.total_amount.toLocaleString()}
                                                 </p>
                                             </div>
+                                            {member.status && (
+                                                <span
+                                                    className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                        member.status === "paid"
+                                                            ? "bg-green-100 text-green-700"
+                                                            : member.status === "excused"
+                                                            ? "bg-blue-100 text-blue-700"
+                                                            : "bg-red-100 text-red-700"
+                                                    }`}
+                                                >
+                                                    {member.status}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 ))

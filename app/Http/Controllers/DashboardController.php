@@ -72,18 +72,25 @@ class DashboardController extends Controller
         })->count();
 
         // Top sanctioned members
-        $topSanctionedMembers = Sanction::with('member')
+        $topSanctionedMembers = Sanction::with(['member', 'event'])
             ->selectRaw('member_id, COUNT(*) as sanction_count, SUM(amount) as total_amount')
             ->groupBy('member_id')
             ->orderByDesc('sanction_count')
             ->limit(5)
             ->get()
             ->map(function ($sanction) {
+                // Get the most recent sanction for this member to show status and reason
+                $recentSanction = Sanction::where('member_id', $sanction->member_id)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                
                 return [
                     'member_name' => $sanction->member->firstname . ' ' . $sanction->member->lastname,
                     'student_id' => $sanction->member->student_id,
                     'sanction_count' => $sanction->sanction_count,
                     'total_amount' => $sanction->total_amount,
+                    'status' => $recentSanction->status ?? 'unpaid',
+                    'type' => $recentSanction->status === 'excused' ? 'Excused' : ($recentSanction->reason ?? 'N/A'),
                 ];
             });
 

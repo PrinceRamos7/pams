@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Eye, Edit, Trash2, MoreVertical, Clock, Plus, Calendar, Users } from "lucide-react";
 import { Transition } from "@headlessui/react";
 import { router } from "@inertiajs/react";
-import PasswordModal from "../PasswordModal";
+import AuthModal from "../AuthModal";
 import NotificationModal from "../NotificationModal";
+import { Toaster } from "react-hot-toast";
 
 export default function AttendanceTable() {
     const [events, setEvents] = useState([]);
@@ -99,8 +100,15 @@ export default function AttendanceTable() {
         return true;
     };
 
-    const handlePasswordConfirm = async (password) => {
-        await verifyPassword(password);
+    const handleAuthConfirm = async (authData) => {
+        // Verify authentication (password or face)
+        if (authData.method === 'password') {
+            await verifyPassword(authData.password);
+        } else if (authData.method === 'face') {
+            // Face authentication already verified in AuthModal
+            // Just log for audit purposes
+            console.log('Authenticated via face recognition:', authData.user);
+        }
         
         // Execute the original action
         switch (passwordModal.action) {
@@ -441,6 +449,29 @@ export default function AttendanceTable() {
         
         // Return true if current time is past the time-in start time
         return now >= timeInDateTime || testMode;
+    };
+
+    const isTimeOver = (event) => {
+        // Check if both time-in and time-out periods have ended
+        if (!event.time_out || !event.date) return false;
+        
+        const now = new Date();
+        const timeOutDateTime = new Date(event.date + 'T' + event.time_out);
+        const timeOutEndTime = new Date(timeOutDateTime.getTime() + 15 * 60000);
+        
+        // Return true if current time is past the time-out end time
+        return now > timeOutEndTime && !testMode;
+    };
+
+    const hasTimeOutStarted = (event) => {
+        // Check if the time-out period has started (not necessarily active, just started)
+        if (!event.time_out || !event.date) return false;
+        
+        const now = new Date();
+        const timeOutDateTime = new Date(event.date + 'T' + event.time_out);
+        
+        // Return true if current time is past or at the time-out start time
+        return now >= timeOutDateTime || testMode;
     };
 
     const handleTimeIn = (event) => {
@@ -792,11 +823,11 @@ export default function AttendanceTable() {
                                                     <button
                                                         onClick={() => handleForceBeginTimeOut(event)}
                                                         className={`w-full text-left px-4 py-2 flex items-center gap-3 ${
-                                                            event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event)
+                                                            event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event) || isTimeOver(event)
                                                                 ? 'opacity-50 cursor-not-allowed text-gray-400' 
                                                                 : 'hover:bg-blue-50 text-blue-600'
                                                         }`}
-                                                        disabled={event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event)}
+                                                        disabled={event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event) || isTimeOver(event)}
                                                     >
                                                         <Clock size={16} />
                                                         Force Begin Time Out
@@ -805,11 +836,11 @@ export default function AttendanceTable() {
                                                     <button
                                                         onClick={() => handleForceReopenTimeOut(event)}
                                                         className={`w-full text-left px-4 py-2 flex items-center gap-3 ${
-                                                            event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event)
+                                                            event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event) || !hasTimeOutStarted(event)
                                                                 ? 'opacity-50 cursor-not-allowed text-gray-400' 
                                                                 : 'hover:bg-purple-50 text-purple-600'
                                                         }`}
-                                                        disabled={event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event)}
+                                                        disabled={event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event) || !hasTimeOutStarted(event)}
                                                     >
                                                         <Clock size={16} />
                                                         Force Reopen Time Out
@@ -818,11 +849,11 @@ export default function AttendanceTable() {
                                                                     <button
                                                         onClick={() => handleForceClose(event)}
                                                         className={`w-full text-left px-4 py-2 flex items-center gap-3 ${
-                                                            event.status === 'closed' || !hasTimeInStarted(event)
+                                                            event.status === 'closed' || !hasTimeInStarted(event) || isTimeOver(event)
                                                                 ? 'opacity-50 cursor-not-allowed text-gray-400'
                                                                 : 'hover:bg-orange-50 text-orange-600'
                                                         }`}
-                                                        disabled={event.status === 'closed' || !hasTimeInStarted(event)}
+                                                        disabled={event.status === 'closed' || !hasTimeInStarted(event) || isTimeOver(event)}
                                                     >
                                                         <Clock size={16} />
                                                         Force Close & Calculate
@@ -867,11 +898,12 @@ export default function AttendanceTable() {
                 </div>
             )}
 
-            {/* Password Confirmation Modal */}
-            <PasswordModal
+            {/* Authentication Modal (Password or Face Recognition) */}
+            <Toaster position="top-right" />
+            <AuthModal
                 isOpen={passwordModal.isOpen}
                 onClose={() => setPasswordModal({ ...passwordModal, isOpen: false })}
-                onConfirm={handlePasswordConfirm}
+                onConfirm={handleAuthConfirm}
                 title={passwordModal.title}
                 message={passwordModal.message}
                 actionText="Confirm"

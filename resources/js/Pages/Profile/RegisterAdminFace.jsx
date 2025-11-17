@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Head, router } from "@inertiajs/react";
+import { Head, router, usePage } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import { enrollFace, startCamera, stopCamera } from "../../utils/faceio";
 import NotificationModal from "../../Components/NotificationModal";
-
 import {
     SidebarProvider,
     SidebarInset,
@@ -18,8 +17,12 @@ import {
     CardHeader,
     CardTitle,
 } from "../../components/ui/card";
+import { Camera, Shield, CheckCircle2 } from "lucide-react";
 
-export default function RegisterFace({ member }) {
+export default function RegisterAdminFace() {
+    const { auth } = usePage().props;
+    const user = auth.user;
+    
     const [isProcessing, setIsProcessing] = useState(false);
     const [enrollmentSuccess, setEnrollmentSuccess] = useState(false);
     const [cameraActive, setCameraActive] = useState(false);
@@ -43,12 +46,10 @@ export default function RegisterFace({ member }) {
 
     const breadcrumbs = [
         { href: route("dashboard"), label: "Dashboard" },
-        { href: route("members.index"), label: "Members" },
-        { label: "Register Face" },
+        { label: "Register Admin Face" },
     ];
 
     useEffect(() => {
-        // Cleanup camera on unmount
         return () => {
             if (streamRef.current) {
                 stopCamera(streamRef.current);
@@ -62,7 +63,6 @@ export default function RegisterFace({ member }) {
             const stream = await startCamera(videoRef.current);
             streamRef.current = stream;
             
-            // Wait a bit for video to stabilize
             await new Promise(resolve => setTimeout(resolve, 1000));
             
             toast.dismiss();
@@ -80,7 +80,6 @@ export default function RegisterFace({ member }) {
             return;
         }
 
-        // Check if video is ready
         if (!videoRef.current || !videoRef.current.videoWidth) {
             toast.error("Video not ready. Please wait a moment and try again.");
             return;
@@ -92,7 +91,6 @@ export default function RegisterFace({ member }) {
         try {
             toast.loading("Analyzing face... Please stay still");
             
-            // Wait a moment for better capture
             await new Promise(resolve => setTimeout(resolve, 500));
             
             const result = await enrollFace(videoRef.current);
@@ -104,7 +102,7 @@ export default function RegisterFace({ member }) {
                 return;
             }
 
-            // Capture face image from video
+            // Capture face image
             const canvas = document.createElement('canvas');
             canvas.width = videoRef.current.videoWidth;
             canvas.height = videoRef.current.videoHeight;
@@ -117,7 +115,7 @@ export default function RegisterFace({ member }) {
                 .querySelector('meta[name="csrf-token"]')
                 ?.getAttribute("content");
 
-            const response = await fetch("/api/faceio/enroll", {
+            const response = await fetch("/api/faceio/enroll-admin", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -125,7 +123,7 @@ export default function RegisterFace({ member }) {
                     "X-CSRF-TOKEN": csrfToken,
                 },
                 body: JSON.stringify({
-                    member_id: member.member_id,
+                    user_id: user.id,
                     face_id: result.faceId,
                     face_descriptor: result.descriptor,
                     face_image: faceImage,
@@ -137,7 +135,6 @@ export default function RegisterFace({ member }) {
             if (data.success) {
                 setEnrollmentSuccess(true);
                 
-                // Stop camera
                 if (streamRef.current) {
                     stopCamera(streamRef.current);
                     setCameraActive(false);
@@ -145,12 +142,12 @@ export default function RegisterFace({ member }) {
                 
                 showNotificationModal(
                     "Success!",
-                    `Face registered successfully for ${member.firstname} ${member.lastname}!`,
+                    `Face registered successfully! You can now use face recognition for authentication.`,
                     "success"
                 );
                 
                 setTimeout(() => {
-                    router.visit(route("members.index"));
+                    router.visit(route("dashboard"));
                 }, 2500);
             } else {
                 showNotificationModal("Error!", data.message || "Failed to save face data", "error");
@@ -165,7 +162,7 @@ export default function RegisterFace({ member }) {
     };
 
     const handleRemoveFace = async () => {
-        if (!confirm("Are you sure you want to remove face registration?")) {
+        if (!confirm("Are you sure you want to remove your face registration?")) {
             return;
         }
 
@@ -176,7 +173,7 @@ export default function RegisterFace({ member }) {
                 .querySelector('meta[name="csrf-token"]')
                 ?.getAttribute("content");
 
-            const response = await fetch(`/api/faceio/unenroll/${member.member_id}`, {
+            const response = await fetch(`/api/faceio/unenroll-admin/${user.id}`, {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
@@ -190,11 +187,11 @@ export default function RegisterFace({ member }) {
             if (data.success) {
                 showNotificationModal(
                     "Success!",
-                    `Face registration removed successfully for ${member.firstname} ${member.lastname}!`,
+                    `Face registration removed successfully!`,
                     "success"
                 );
                 setTimeout(() => {
-                    router.visit(route("members.index"));
+                    router.visit(route("dashboard"));
                 }, 2500);
             } else {
                 showNotificationModal("Error!", data.message || "Failed to remove face registration", "error");
@@ -212,7 +209,7 @@ export default function RegisterFace({ member }) {
         <SidebarProvider>
             <Toaster position="top-right" />
             <AppSidebar />
-            <Head title="Register Face" />
+            <Head title="Register Admin Face" />
 
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center justify-between px-4 border-b">
@@ -225,30 +222,38 @@ export default function RegisterFace({ member }) {
 
                 <main className="w-full p-6">
                     <div className="max-w-2xl mx-auto">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                    Face Registration
+                        <Card className="border-l-4 border-red-500">
+                            <CardHeader className="bg-gradient-to-r from-red-50 to-rose-50">
+                                <CardTitle className="flex items-center gap-3">
+                                    <div className="p-2 bg-red-100 rounded-lg">
+                                        <Shield className="w-6 h-6 text-red-600" />
+                                    </div>
+                                    <div>
+                                        <div className="text-xl">Admin Face Registration</div>
+                                        <div className="text-sm font-normal text-gray-600 mt-1">
+                                            Register your face for secure authentication
+                                        </div>
+                                    </div>
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="pt-6">
                                 <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                    <h3 className="font-semibold text-blue-800 mb-2">
-                                        Member Information
+                                    <h3 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                                        <Shield className="w-5 h-5" />
+                                        Admin Information
                                     </h3>
                                     <p className="text-blue-700">
-                                        Name: {member.firstname} {member.lastname}
+                                        Name: {user.name}
                                     </p>
                                     <p className="text-blue-700">
-                                        Student ID: {member.student_id}
+                                        Email: {user.email}
                                     </p>
-                                    <p className="text-blue-700">
-                                        Status: {member.faceio_id ? (
-                                            <span className="text-green-600 font-semibold">✓ Face Registered</span>
+                                    <p className="text-blue-700 flex items-center gap-2">
+                                        Status: {user.faceio_id ? (
+                                            <span className="inline-flex items-center gap-1 text-green-600 font-semibold">
+                                                <CheckCircle2 className="w-4 h-4" />
+                                                Face Registered
+                                            </span>
                                         ) : (
                                             <span className="text-orange-600 font-semibold">Not Registered</span>
                                         )}
@@ -256,9 +261,10 @@ export default function RegisterFace({ member }) {
                                 </div>
 
                                 {enrollmentSuccess && (
-                                    <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                                    <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200 flex items-center gap-3">
+                                        <CheckCircle2 className="w-6 h-6 text-green-600" />
                                         <p className="text-green-800 font-semibold">
-                                            ✓ Face registered successfully!
+                                            Face registered successfully!
                                         </p>
                                     </div>
                                 )}
@@ -269,20 +275,30 @@ export default function RegisterFace({ member }) {
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             Camera Preview
                                         </label>
-                                        <div className="relative bg-gray-900 rounded-lg overflow-hidden" style={{ aspectRatio: '4/3' }}>
+                                        <div className="relative bg-gray-900 rounded-xl overflow-hidden shadow-lg" style={{ aspectRatio: '4/3' }}>
                                             <video
                                                 ref={videoRef}
                                                 autoPlay
                                                 playsInline
                                                 muted
                                                 className="w-full h-full object-cover"
+                                                style={{ transform: 'scaleX(-1)' }}
                                             />
+                                            
+                                            {/* Face Guide */}
+                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                <div className="relative w-48 h-60 border-4 border-red-400 rounded-full opacity-30">
+                                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-red-400 rounded-full"></div>
+                                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-3 h-3 bg-red-400 rounded-full"></div>
+                                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-red-400 rounded-full"></div>
+                                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-red-400 rounded-full"></div>
+                                                </div>
+                                            </div>
+                                            
                                             {!cameraActive && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75">
+                                                <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-90">
                                                     <div className="text-center text-white">
-                                                        <svg className="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                                        </svg>
+                                                        <Camera className="w-16 h-16 mx-auto mb-3 opacity-50" />
                                                         <p>Camera not started</p>
                                                     </div>
                                                 </div>
@@ -295,18 +311,16 @@ export default function RegisterFace({ member }) {
                                             <button
                                                 onClick={handleStartCamera}
                                                 disabled={isProcessing}
-                                                className="w-full px-6 py-4 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition disabled:bg-green-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                className="w-full px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 transition shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
                                             >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                                </svg>
+                                                <Camera className="w-5 h-5" />
                                                 Start Camera
                                             </button>
                                         ) : (
                                             <button
                                                 onClick={handleEnrollFace}
                                                 disabled={isProcessing}
-                                                className="w-full px-6 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                className="w-full px-6 py-4 bg-gradient-to-r from-red-600 to-rose-600 text-white font-semibold rounded-xl hover:from-red-700 hover:to-rose-700 transition shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
                                             >
                                                 {isProcessing ? (
                                                     <>
@@ -318,20 +332,18 @@ export default function RegisterFace({ member }) {
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                                        </svg>
-                                                        {member.faceio_id ? "Re-register Face" : "Register Face"}
+                                                        <Shield className="w-5 h-5" />
+                                                        {user.faceio_id ? "Re-register Face" : "Register Face"}
                                                     </>
                                                 )}
                                             </button>
                                         )}
 
-                                        {member.faceio_id && (
+                                        {user.faceio_id && (
                                             <button
                                                 onClick={handleRemoveFace}
                                                 disabled={isProcessing}
-                                                className="w-full px-6 py-4 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:bg-red-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                className="w-full px-6 py-4 bg-gray-600 text-white font-semibold rounded-xl hover:bg-gray-700 transition shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
                                             >
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -342,28 +354,27 @@ export default function RegisterFace({ member }) {
 
                                         <button
                                             type="button"
-                                            onClick={() =>
-                                                router.visit(route("members.index"))
-                                            }
+                                            onClick={() => router.visit(route("dashboard"))}
                                             disabled={isProcessing}
-                                            className="w-full px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                            className="w-full px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition disabled:bg-gray-100"
                                         >
-                                            Back to Members
+                                            Back to Dashboard
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                                    <h4 className="font-semibold text-yellow-800 mb-2">
-                                        Tips for best results:
+                                <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                                    <h4 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                                        <Shield className="w-5 h-5" />
+                                        Security Tips:
                                     </h4>
-                                    <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
+                                    <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
                                         <li>Ensure good lighting on your face</li>
                                         <li>Look directly at the camera</li>
                                         <li>Remove glasses if possible</li>
                                         <li>Keep a neutral expression</li>
                                         <li>Stay still during the scan</li>
-                                        <li>Make sure your whole face is visible</li>
+                                        <li>Your face data is encrypted and secure</li>
                                     </ul>
                                 </div>
                             </CardContent>
@@ -372,7 +383,6 @@ export default function RegisterFace({ member }) {
                 </main>
             </SidebarInset>
 
-            {/* Notification Modal */}
             <NotificationModal
                 isOpen={notificationModal.isOpen}
                 onClose={() => setNotificationModal({ ...notificationModal, isOpen: false })}

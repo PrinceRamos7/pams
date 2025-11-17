@@ -102,13 +102,34 @@ class AttendanceEventController extends Controller
             $event = AttendanceEvent::findOrFail($eventId);
             $eventName = $event->agenda;
             
-            $event->delete();
+            // Delete related records first to avoid foreign key constraints
+            \DB::transaction(function () use ($event) {
+                // Delete attendance records
+                \App\Models\AttendanceRecord::where('event_id', $event->event_id)->delete();
+                
+                // Delete sanctions
+                \App\Models\Sanction::where('event_id', $event->event_id)->delete();
+                
+                // Delete the event
+                $event->delete();
+            });
+
+            \Log::info('Event deleted successfully', [
+                'event_id' => $eventId,
+                'event_name' => $eventName
+            ]);
 
             return response()->json([
                 'success' => true,
                 'message' => "Event '{$eventName}' deleted successfully!",
             ]);
         } catch (\Exception $e) {
+            \Log::error('Failed to delete event', [
+                'event_id' => $eventId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete event: ' . $e->getMessage(),
@@ -191,16 +212,34 @@ class AttendanceEventController extends Controller
                 ], 400);
             }
             
+            \Log::info('Force reopening time-out window', ['event_id' => $eventId, 'agenda' => $event->agenda]);
+            
+            // Delete all sanctions for this event before reopening
+            $sanctionService = app(\App\Services\SanctionService::class);
+            $deleteResult = $sanctionService->deleteSanctionsForEvent($eventId);
+            
+            \Log::info('Sanctions deletion result', [
+                'event_id' => $eventId,
+                'success' => $deleteResult['success'],
+                'deleted_count' => $deleteResult['deleted_count'] ?? 0
+            ]);
+            
             // Extend time-out duration by 30 minutes from now
             $event->update([
                 'time_out' => $now->format('H:i:s'),
                 'time_out_duration' => 30, // Reset to 30 minutes
             ]);
             
+            $message = "Time-out window reopened for '{$event->agenda}'. Members can time out for the next 30 minutes.";
+            if ($deleteResult['deleted_count'] > 0) {
+                $message .= " {$deleteResult['deleted_count']} previous sanctions removed.";
+            }
+            
             return response()->json([
                 'success' => true,
-                'message' => "Time-out window reopened for '{$event->agenda}'. Members can time out for the next 30 minutes.",
+                'message' => $message,
                 'event' => $event->fresh(),
+                'sanctions_deleted' => $deleteResult['deleted_count'] ?? 0,
             ]);
         } catch (\Exception $e) {
             \Log::error('Failed to reopen time out window', ['error' => $e->getMessage(), 'eventId' => $eventId]);

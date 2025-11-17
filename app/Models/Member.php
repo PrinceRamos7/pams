@@ -18,8 +18,10 @@ class Member extends Model
     'phone_number',
     'address',
     'email',
+    'profile_picture',
     'faceio_id',
     'face_descriptor',
+    'face_image',
     'year',
     'status'
 ];

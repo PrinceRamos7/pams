@@ -275,7 +275,6 @@ class AttendanceRecordController extends Controller
         try {
             $validated = $request->validate([
                 'time_out' => 'required',
-                'photo_out' => 'nullable|string',
             ]);
 
             $record = AttendanceRecord::with('event')->findOrFail($recordId);
@@ -300,22 +299,9 @@ class AttendanceRecordController extends Controller
                     'message' => 'Time-out window is not active. Window: ' . $timeOutStart->format('g:i A') . ' - ' . $timeOutEnd->format('g:i A'),
                 ], 422);
             }
-            
-            // Handle photo if it's base64
-            if (!empty($validated['photo_out']) && strpos($validated['photo_out'], 'data:image') === 0) {
-                $image_parts = explode(";base64,", $validated['photo_out']);
-                $image_base64 = base64_decode($image_parts[1]);
-
-                $fileName = 'timeout_' . uniqid() . '.jpg';
-                $filePath = 'attendance_photos/' . $fileName;
-
-                Storage::disk('public')->put($filePath, $image_base64);
-                $validated['photo_out'] = $filePath;
-            }
 
             $record->update([
                 'time_out' => now(),
-                'photo_out' => $validated['photo_out'] ?? null,
             ]);
 
             Log::info('Time out recorded successfully', [
@@ -410,5 +396,42 @@ class AttendanceRecordController extends Controller
         ]);
 
         return $pdf->download('attendance-' . $event->agenda . '-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Find attendance record by event_id and member_id
+     */
+    public function findRecord(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'event_id' => 'required|exists:attendance_events,event_id',
+                'member_id' => 'required|exists:members,member_id',
+            ]);
+
+            $record = AttendanceRecord::where('event_id', $validated['event_id'])
+                ->where('member_id', $validated['member_id'])
+                ->whereNotNull('time_in')
+                ->first();
+
+            if (!$record) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No time-in record found for this member',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'record' => $record,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Find record failed:', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to find record: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

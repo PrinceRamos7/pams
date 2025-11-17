@@ -180,4 +180,58 @@ class MemberController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Upload profile picture for a member
+     */
+    public function uploadProfilePicture(Request $request, $memberId)
+    {
+        try {
+            $request->validate([
+                'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ]);
+
+            $member = Member::where('member_id', $memberId)->firstOrFail();
+
+            if ($request->hasFile('profile_picture')) {
+                $file = $request->file('profile_picture');
+                $filename = 'member_' . $memberId . '_' . time() . '.' . $file->getClientOriginalExtension();
+                
+                // Store in public/storage/profile_pictures
+                $path = $file->storeAs('profile_pictures', $filename, 'public');
+                
+                // Delete old profile picture if exists
+                if ($member->profile_picture) {
+                    $oldPath = str_replace('/storage/', '', $member->profile_picture);
+                    \Storage::disk('public')->delete($oldPath);
+                }
+                
+                // Update member with new profile picture path
+                $member->profile_picture = '/storage/' . $path;
+                $member->save();
+                
+                \Log::info('Profile picture uploaded successfully', [
+                    'member_id' => $memberId,
+                    'path' => $member->profile_picture
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Profile picture uploaded successfully',
+                    'profile_picture' => $member->profile_picture
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No file uploaded'
+            ], 400);
+        } catch (\Exception $e) {
+            \Log::error('Profile picture upload error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload profile picture: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

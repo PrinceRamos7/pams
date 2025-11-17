@@ -2,49 +2,68 @@ import React, { useState, useRef, useEffect } from "react";
 import { Head, router } from "@inertiajs/react";
 import { Toaster, toast } from "react-hot-toast";
 import { authenticateFace, startCamera, stopCamera } from "../../utils/faceio";
-
-import {
-    SidebarProvider,
-    SidebarInset,
-    SidebarTrigger,
-} from "../../components/ui/sidebar";
-import { AppSidebar } from "../../components/app-sidebar";
-import { Separator } from "../../components/ui/separator";
-import Breadcrumbs from "../../components/Breadcrumbs";
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle,
 } from "../../components/ui/card";
+import { Clock, Calendar, Users, CheckCircle2, XCircle, Camera, AlertCircle } from "lucide-react";
 
 export default function FaceTimeIn({ event }) {
     const [isProcessing, setIsProcessing] = useState(false);
-    const [recognizedMember, setRecognizedMember] = useState(null);
     const [cameraActive, setCameraActive] = useState(false);
+    const [attemptCount, setAttemptCount] = useState(0);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [successData, setSuccessData] = useState(null);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [currentTime, setCurrentTime] = useState(new Date());
     const videoRef = useRef(null);
     const streamRef = useRef(null);
 
-    const breadcrumbs = [
-        { href: route("dashboard"), label: "Dashboard" },
-        { href: route("attendance.index"), label: "Attendance" },
-        { label: "Face Recognition Time In" },
-    ];
+
 
     useEffect(() => {
-        // Auto-start camera
+        // Start camera on mount
         handleStartCamera();
         
-        // Cleanup on unmount
+        // Update current time every second
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+        
         return () => {
             if (streamRef.current) {
                 stopCamera(streamRef.current);
             }
+            clearInterval(timer);
         };
     }, []);
 
+    // Calculate time window status
+    const getTimeWindowStatus = () => {
+        const now = new Date();
+        const timeInStart = new Date(event.date + 'T' + event.time_in);
+        const timeInEnd = new Date(timeInStart.getTime() + (event.time_in_duration || 30) * 60000);
+        
+        const isActive = now >= timeInStart && now <= timeInEnd;
+        const remainingMinutes = isActive ? Math.floor((timeInEnd - now) / 60000) : 0;
+        
+        return { isActive, remainingMinutes, timeInStart, timeInEnd };
+    };
+
+    const timeWindow = getTimeWindowStatus();
+
+    // Start camera for face recognition
     const handleStartCamera = async () => {
         try {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            if (!videoRef.current) {
+                throw new Error("Camera element not ready");
+            }
+            
             const stream = await startCamera(videoRef.current);
             streamRef.current = stream;
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -54,62 +73,84 @@ export default function FaceTimeIn({ event }) {
         }
     };
 
-    const handleFaceAuthentication = async () => {
+    // Face Recognition
+    const handleFaceRecognition = async () => {
         if (!cameraActive || !videoRef.current || !videoRef.current.videoWidth) {
             toast.error("Camera not ready. Please wait a moment.");
             return;
         }
 
+        if (attemptCount >= 3) {
+            setErrorMessage("Maximum attempts reached (3/3). Please register your face first or contact administrator.");
+            setShowErrorModal(true);
+            return;
+        }
+
         setIsProcessing(true);
-        setRecognizedMember(null);
 
         try {
             toast.loading("Scanning face...");
-            
+
             // Get all enrolled faces
             const enrolledResponse = await fetch("/api/faceio/enrolled-faces");
             const enrolledData = await enrolledResponse.json();
-            
+
             if (!enrolledData.success || !enrolledData.faces || enrolledData.faces.length === 0) {
                 toast.dismiss();
-                toast.error("No enrolled faces found. Please register faces first.");
+                toast.error("No enrolled faces found");
                 setIsProcessing(false);
                 return;
             }
 
-            // Wait a moment for better capture
             await new Promise(resolve => setTimeout(resolve, 500));
-            
+
             const result = await authenticateFace(videoRef.current, enrolledData.faces);
             toast.dismiss();
 
             if (!result.success) {
-                toast.error(result.error || "Face not recognized");
+                const newAttemptCount = attemptCount + 1;
+                setAttemptCount(newAttemptCount);
+                
+                if (newAttemptCount >= 3) {
+                    setErrorMessage("Face not recognized after 3 attempts. Please register your face first before using face recognition.");
+                    setShowErrorModal(true);
+                } else {
+                    toast.error(`Face not recognized. Attempt ${newAttemptCount}/3. Please try again.`);
+                }
+                
                 setIsProcessing(false);
                 return;
             }
 
-            setRecognizedMember(result.member);
-            toast.success(`Welcome, ${result.member.firstname}!`);
+            toast.success("Face verified successfully!");
 
             // Record attendance
-            await recordAttendance(result.member, result.faceId);
+            await recordAttendance(result.faceId, result.member);
 
         } catch (error) {
-            console.error("Face authentication error:", error);
+            console.error("Face recognition error:", error);
             toast.dismiss();
-            toast.error("Face authentication failed");
+            const newAttemptCount = attemptCount + 1;
+            setAttemptCount(newAttemptCount);
+            
+            if (newAttemptCount >= 3) {
+                setErrorMessage("Face recognition failed after 3 attempts. Please register your face first.");
+                setShowErrorModal(true);
+            } else {
+                toast.error(`Recognition failed. Attempt ${newAttemptCount}/3`);
+            }
             setIsProcessing(false);
         }
     };
 
-    const recordAttendance = async (member, faceId) => {
+    // Record attendance
+    const recordAttendance = async (faceId, member) => {
         const csrfToken = document
             .querySelector('meta[name="csrf-token"]')
             ?.getAttribute("content");
 
         try {
-            const res = await fetch("/attendance-records", {
+            const response = await fetch("/attendance-records", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -123,170 +164,387 @@ export default function FaceTimeIn({ event }) {
                 }),
             });
 
-            const data = await res.json();
+            const data = await response.json();
 
             if (data.success) {
-                toast.success("Time In recorded successfully!");
+                // Show success modal with member details
+                setSuccessData({
+                    name: `${member.firstname} ${member.lastname}`,
+                    studentId: member.student_id,
+                    year: member.year || member.year_level || 'Not Set'
+                });
+                setShowSuccessModal(true);
+                
+                // Reset for next person after 3 seconds
                 setTimeout(() => {
-                    setRecognizedMember(null);
+                    setShowSuccessModal(false);
+                    setAttemptCount(0);
                     setIsProcessing(false);
-                }, 2000);
+                }, 3000);
             } else {
-                toast.error(data.message || "Failed to record time in");
+                setErrorMessage(data.message || "Failed to record attendance");
+                setShowErrorModal(true);
                 setIsProcessing(false);
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Failed to record time in");
+        } catch (error) {
+            console.error("Record attendance error:", error);
+            setErrorMessage("Failed to record attendance. Please try again.");
+            setShowErrorModal(true);
             setIsProcessing(false);
         }
     };
 
-    return (
-        <SidebarProvider>
-            <Toaster position="top-right" />
-            <AppSidebar />
-            <Head title="Face Recognition Time In" />
+    const handleBack = () => {
+        if (streamRef.current) {
+            stopCamera(streamRef.current);
+            setCameraActive(false);
+        }
+        router.visit(route("attendance.index"));
+    };
 
-            <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center justify-between px-4 border-b">
-                    <div className="flex items-center gap-2">
-                        <SidebarTrigger className="-ml-1" />
-                        <Separator orientation="vertical" className="h-6" />
-                        <Breadcrumbs crumbs={breadcrumbs} />
+    const handleRegisterFace = () => {
+        if (streamRef.current) {
+            stopCamera(streamRef.current);
+        }
+        router.visit(route("members.index"));
+    };
+
+    return (
+        <>
+            <Toaster position="top-right" />
+            <Head title="Time In - Face Recognition" />
+
+            <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
+                {/* Header Bar */}
+                <div className="bg-white border-b shadow-sm">
+                    <div className="max-w-7xl mx-auto px-6 py-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-green-100 rounded-lg">
+                                    <Camera className="w-6 h-6 text-green-600" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-900">Time In - Face Recognition</h1>
+                                    <p className="text-sm text-gray-600">Scan your face to record attendance</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-2xl font-bold text-gray-900">
+                                    {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                    {currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </header>
+                </div>
 
                 <main className="w-full p-6">
-                    <div className="max-w-2xl mx-auto">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-green-600 flex items-center gap-2">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                    Face Recognition Time In (FREE!)
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
-                                    <h3 className="font-semibold text-green-800 mb-2">
-                                        {event.agenda}
-                                    </h3>
-                                    <p className="text-green-700">
-                                        Date: {event.date}
-                                    </p>
-                                    <p className="text-green-700">
-                                        Time In Period: {event.time_in}
-                                    </p>
-                                </div>
+                    <div className="max-w-6xl mx-auto">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Left Column - Camera */}
+                            <div className="lg:col-span-2">
+                                <Card className="shadow-lg">
+                                    <CardContent className="p-6">
+                                        {/* Camera Preview */}
+                                        <div className="mb-6">
+                                            <div className="relative bg-gray-900 rounded-xl overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
+                                                <video
+                                                    ref={videoRef}
+                                                    autoPlay
+                                                    playsInline
+                                                    muted
+                                                    className="w-full h-full object-cover"
+                                                    style={{ transform: 'scaleX(-1)' }}
+                                                />
+                                                
+                                                {/* Face Guide Overlay */}
+                                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                    <div className="relative w-64 h-80 border-4 border-green-400 rounded-full opacity-30">
+                                                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-green-400 rounded-full"></div>
+                                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-4 h-4 bg-green-400 rounded-full"></div>
+                                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-green-400 rounded-full"></div>
+                                                        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-green-400 rounded-full"></div>
+                                                    </div>
+                                                </div>
 
-                                {recognizedMember && (
-                                    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200 animate-pulse">
-                                        <h4 className="font-semibold text-blue-800 mb-2">
-                                            ✓ Recognized!
-                                        </h4>
-                                        <p className="text-blue-700">
-                                            Name: {recognizedMember.firstname} {recognizedMember.lastname}
-                                        </p>
-                                        <p className="text-blue-700">
-                                            Student ID: {recognizedMember.student_id}
-                                        </p>
-                                    </div>
-                                )}
+                                                {/* Camera Status Indicator */}
+                                                <div className="absolute top-4 left-4">
+                                                    {cameraActive ? (
+                                                        <div className="flex items-center gap-2 bg-green-500 text-white px-3 py-1.5 rounded-full text-sm font-medium shadow-lg">
+                                                            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                                                            Camera Active
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-2 bg-gray-700 text-white px-3 py-1.5 rounded-full text-sm font-medium shadow-lg">
+                                                            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                                            Initializing...
+                                                        </div>
+                                                    )}
+                                                </div>
 
-                                <div className="flex flex-col items-center gap-6">
-                                    {/* Video Preview */}
-                                    <div className="w-full max-w-md">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Camera View
-                                        </label>
-                                        <div className="relative bg-gray-900 rounded-lg overflow-hidden" style={{ aspectRatio: '4/3' }}>
-                                            <video
-                                                ref={videoRef}
-                                                autoPlay
-                                                playsInline
-                                                muted
-                                                className="w-full h-full object-cover mirror"
-                                                style={{ transform: 'scaleX(-1)' }}
-                                            />
-                                            {!cameraActive && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75">
-                                                    <div className="text-center text-white">
-                                                        <svg className="animate-spin w-12 h-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
+                                                {/* Loading Overlay */}
+                                                {!cameraActive && (
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-90">
+                                                        <div className="text-center text-white">
+                                                            <svg className="animate-spin w-16 h-16 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                            </svg>
+                                                            <p className="text-lg font-medium">Starting camera...</p>
+                                                            <p className="text-sm text-gray-400 mt-1">Please allow camera access</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Processing Overlay */}
+                                                {isProcessing && (
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-green-900 bg-opacity-80">
+                                                        <div className="text-center text-white">
+                                                            <div className="relative w-24 h-24 mx-auto mb-4">
+                                                                <div className="absolute inset-0 border-4 border-green-400 border-t-transparent rounded-full animate-spin"></div>
+                                                                <Camera className="absolute inset-0 m-auto w-12 h-12 text-green-400" />
+                                                            </div>
+                                                            <p className="text-xl font-bold">Scanning Face...</p>
+                                                            <p className="text-sm text-green-200 mt-2">Please stay still</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Attempt Warning */}
+                                        {attemptCount > 0 && attemptCount < 3 && (
+                                            <div className="mb-4 p-4 bg-amber-50 rounded-lg border-l-4 border-amber-400 flex items-start gap-3">
+                                                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                                <div>
+                                                    <p className="text-amber-900 font-semibold">Attempt {attemptCount}/3</p>
+                                                    <p className="text-amber-800 text-sm mt-1">
+                                                        Please ensure good lighting and look directly at the camera
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Action Buttons */}
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={handleFaceRecognition}
+                                                disabled={isProcessing || !cameraActive || !timeWindow.isActive || attemptCount >= 3}
+                                                className="flex-1 px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2 text-lg"
+                                            >
+                                                {isProcessing ? (
+                                                    <>
+                                                        <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
                                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                         </svg>
-                                                        <p>Starting camera...</p>
-                                                    </div>
-                                                </div>
-                                            )}
+                                                        Scanning...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Camera className="w-5 h-5" />
+                                                        Scan Face to Time In
+                                                    </>
+                                                )}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleBack}
+                                                disabled={isProcessing}
+                                                className="px-8 py-4 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                            >
+                                                Back
+                                            </button>
                                         </div>
-                                    </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
 
-                                    <button
-                                        onClick={handleFaceAuthentication}
-                                        disabled={isProcessing || !cameraActive}
-                                        className="w-full max-w-md px-6 py-4 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition disabled:bg-green-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                    >
-                                        {isProcessing ? (
-                                            <>
-                                                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                Processing...
-                                            </>
+                            {/* Right Column - Info */}
+                            <div className="space-y-6">
+                                {/* Event Info Card */}
+                                <Card className="shadow-lg border-l-4 border-green-500">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <Users className="w-5 h-5 text-green-600" />
+                                            Event Details
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        <div>
+                                            <p className="text-sm text-gray-600 mb-1">Event Name</p>
+                                            <p className="font-semibold text-gray-900">{event.agenda}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-gray-700">
+                                            <Calendar className="w-4 h-4 text-gray-500" />
+                                            <span className="text-sm">{new Date(event.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-gray-700">
+                                            <Clock className="w-4 h-4 text-gray-500" />
+                                            <span className="text-sm">
+                                                {new Date(event.date + 'T' + event.time_in).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {timeWindow.timeInEnd.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                                            </span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Status Card */}
+                                <Card className={`shadow-lg ${timeWindow.isActive ? 'border-l-4 border-green-500 bg-green-50' : 'border-l-4 border-red-500 bg-red-50'}`}>
+                                    <CardContent className="p-6">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            {timeWindow.isActive ? (
+                                                <CheckCircle2 className="w-8 h-8 text-green-600" />
+                                            ) : (
+                                                <XCircle className="w-8 h-8 text-red-600" />
+                                            )}
+                                            <div>
+                                                <p className="text-sm text-gray-600">Window Status</p>
+                                                <p className={`text-xl font-bold ${timeWindow.isActive ? 'text-green-700' : 'text-red-700'}`}>
+                                                    {timeWindow.isActive ? 'ACTIVE' : 'CLOSED'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {timeWindow.isActive ? (
+                                            <div className="mt-4 p-3 bg-white rounded-lg">
+                                                <p className="text-sm text-gray-600 mb-1">Time Remaining</p>
+                                                <p className="text-3xl font-bold text-green-600">{timeWindow.remainingMinutes} min</p>
+                                            </div>
                                         ) : (
-                                            <>
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                </svg>
-                                                Scan Face to Time In
-                                            </>
+                                            <p className="text-sm text-red-700 mt-2">
+                                                Time-in window is not active. Please come back during the active window.
+                                            </p>
                                         )}
-                                    </button>
+                                    </CardContent>
+                                </Card>
 
-                                    <div className="flex gap-3 w-full max-w-md">
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                router.visit(
-                                                    route("attendance-records.time-in", event.event_id)
-                                                )
-                                            }
-                                            disabled={isProcessing}
-                                            className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                        >
-                                            Use Manual Entry
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                router.visit(
-                                                    route("attendance.index")
-                                                )
-                                            }
-                                            disabled={isProcessing}
-                                            className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                        >
-                                            Back
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                                    <p className="text-sm text-yellow-800">
-                                        <strong>Tips:</strong> Ensure good lighting, look directly at the camera, and stay still during scanning.
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                {/* Tips Card */}
+                                <Card className="shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-lg text-blue-900">📋 Tips for Success</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <ul className="space-y-2 text-sm text-blue-900">
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-blue-600 font-bold">•</span>
+                                                <span>Ensure good lighting on your face</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-blue-600 font-bold">•</span>
+                                                <span>Look directly at the camera</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-blue-600 font-bold">•</span>
+                                                <span>Remove glasses if possible</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-blue-600 font-bold">•</span>
+                                                <span>Stay still during scanning</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-blue-600 font-bold">•</span>
+                                                <span>Position face within the guide</span>
+                                            </li>
+                                        </ul>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
                     </div>
                 </main>
-            </SidebarInset>
-        </SidebarProvider>
+            </div>
+
+            {/* Success Modal */}
+            {showSuccessModal && successData && (
+                <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full animate-zoom-in overflow-hidden">
+                        <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-6 text-center">
+                            <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-white mb-4 shadow-lg">
+                                <CheckCircle2 className="h-12 w-12 text-green-600" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-white mb-1">Time In Successful!</h3>
+                            <p className="text-green-100">Attendance has been recorded</p>
+                        </div>
+                        <div className="p-6">
+                            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 space-y-3 mb-6">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-600 font-medium">Name:</span>
+                                    <span className="text-gray-900 font-bold text-lg">{successData.name}</span>
+                                </div>
+                                <div className="h-px bg-gray-300"></div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-600 font-medium">Student ID:</span>
+                                    <span className="text-gray-900 font-semibold">{successData.studentId}</span>
+                                </div>
+                                <div className="h-px bg-gray-300"></div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-600 font-medium">Year Level:</span>
+                                    <span className="text-gray-900 font-semibold">{successData.year}</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-center gap-2 text-green-600">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <p className="font-semibold">Ready for next person...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Error Modal */}
+            {showErrorModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full animate-zoom-in overflow-hidden">
+                        <div className="bg-gradient-to-r from-red-500 to-rose-500 p-6 text-center">
+                            <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-white mb-4 shadow-lg">
+                                <XCircle className="h-12 w-12 text-red-600" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-white mb-1">Recognition Failed</h3>
+                            <p className="text-red-100">Unable to verify your face</p>
+                        </div>
+                        <div className="p-6">
+                            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+                                <p className="text-red-800 text-center">{errorMessage}</p>
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowErrorModal(false);
+                                        setAttemptCount(0);
+                                    }}
+                                    className="flex-1 px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
+                                >
+                                    Try Again
+                                </button>
+                                <button
+                                    onClick={handleRegisterFace}
+                                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
+                                >
+                                    Register Face
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                @keyframes zoom-in {
+                    from {
+                        opacity: 0;
+                        transform: scale(0.8);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                }
+
+                .animate-zoom-in {
+                    animation: zoom-in 0.3s ease-out;
+                }
+            `}</style>
+        </>
     );
 }

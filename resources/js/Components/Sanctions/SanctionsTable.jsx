@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { router, Link } from "@inertiajs/react";
 import { MoreVertical, Eye, Edit, Trash2, Filter } from "lucide-react";
-import PasswordModal from "../PasswordModal";
+import AuthModal from "../AuthModal";
 import EditEventModal from "./EditEventModal";
 import NotificationModal from "../NotificationModal";
+import { Toaster } from "react-hot-toast";
 
 export default function SanctionsTable({ eventSanctions, summary }) {
     const [filter, setFilter] = useState({
@@ -72,8 +73,15 @@ export default function SanctionsTable({ eventSanctions, summary }) {
         return true;
     };
 
-    const handlePasswordConfirm = async (password) => {
-        await verifyPassword(password);
+    const handleAuthConfirm = async (authData) => {
+        // Verify authentication (password or face)
+        if (authData.method === 'password') {
+            await verifyPassword(authData.password);
+        } else if (authData.method === 'face') {
+            // Face authentication already verified in AuthModal
+            console.log('Authenticated via face recognition:', authData.user);
+        }
+        
         await executeDeleteEvent(passwordModal.eventId);
     };
 
@@ -345,11 +353,12 @@ export default function SanctionsTable({ eventSanctions, summary }) {
                 showNotificationModal={showNotificationModal}
             />
 
-            {/* Password Confirmation Modal */}
-            <PasswordModal
+            {/* Authentication Modal (Password or Face Recognition) */}
+            <Toaster position="top-right" />
+            <AuthModal
                 isOpen={passwordModal.isOpen}
                 onClose={() => setPasswordModal({ ...passwordModal, isOpen: false })}
-                onConfirm={handlePasswordConfirm}
+                onConfirm={handleAuthConfirm}
                 title={passwordModal.title}
                 message={passwordModal.message}
                 actionText="Delete"

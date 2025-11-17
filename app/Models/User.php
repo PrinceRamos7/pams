@@ -23,6 +23,7 @@ class User extends Authenticatable
         'password',
         'faceio_id',
         'face_descriptor',
+        'face_image',
     ];
 
     /**

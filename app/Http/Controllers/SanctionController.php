@@ -446,4 +446,98 @@ class SanctionController extends Controller
 
         return $pdf->download('sanctions-' . $event->agenda . '-' . now()->format('Y-m-d') . '.pdf');
     }
+
+    /**
+     * Display member sanctions page
+     */
+    public function memberSanctionsIndex()
+    {
+        // Get all members with sanctions, grouped by member
+        $memberSanctions = Sanction::with('member')
+            ->selectRaw('member_id, COUNT(*) as sanction_count, SUM(amount) as total_amount, 
+                        SUM(CASE WHEN status = "unpaid" THEN amount ELSE 0 END) as unpaid_amount,
+                        SUM(CASE WHEN status = "paid" THEN amount ELSE 0 END) as paid_amount')
+            ->groupBy('member_id')
+            ->orderByDesc('total_amount')
+            ->get()
+            ->map(function ($sanction) {
+                return [
+                    'member_id' => $sanction->member_id,
+                    'member_name' => $sanction->member->firstname . ' ' . $sanction->member->lastname,
+                    'student_id' => $sanction->member->student_id,
+                    'sanction_count' => $sanction->sanction_count,
+                    'total_amount' => $sanction->total_amount,
+                    'unpaid_amount' => $sanction->unpaid_amount,
+                    'paid_amount' => $sanction->paid_amount,
+                ];
+            });
+
+        $summary = [
+            'total_members' => $memberSanctions->count(),
+            'total_unpaid' => $memberSanctions->sum('unpaid_amount'),
+            'total_paid' => $memberSanctions->sum('paid_amount'),
+        ];
+
+        return Inertia::render('Sanctions/MemberSanctions', [
+            'memberSanctions' => $memberSanctions,
+            'summary' => $summary
+        ]);
+    }
+
+    /**
+     * Display member sanction details
+     */
+    public function memberSanctionDetails($memberId)
+    {
+        $member = \App\Models\Member::findOrFail($memberId);
+        
+        $sanctions = Sanction::with('event')
+            ->where('member_id', $memberId)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $summary = [
+            'total_sanctions' => $sanctions->count(),
+            'total_amount' => $sanctions->sum('amount'),
+            'unpaid_amount' => $sanctions->where('status', 'unpaid')->sum('amount'),
+            'paid_amount' => $sanctions->where('status', 'paid')->sum('amount'),
+        ];
+
+        return Inertia::render('Sanctions/MemberSanctionDetails', [
+            'member' => $member,
+            'sanctions' => $sanctions,
+            'summary' => $summary
+        ]);
+    }
+
+    /**
+     * Export Member Sanctions to PDF
+     */
+    public function exportMemberSanctionsPDF()
+    {
+        $memberSanctions = Sanction::with('member')
+            ->selectRaw('member_id, COUNT(*) as sanction_count, SUM(amount) as total_amount, 
+                        SUM(CASE WHEN status = "unpaid" THEN amount ELSE 0 END) as unpaid_amount,
+                        SUM(CASE WHEN status = "paid" THEN amount ELSE 0 END) as paid_amount')
+            ->groupBy('member_id')
+            ->orderByDesc('total_amount')
+            ->get()
+            ->map(function ($sanction) {
+                return [
+                    'member_name' => $sanction->member->firstname . ' ' . $sanction->member->lastname,
+                    'student_id' => $sanction->member->student_id,
+                    'sanction_count' => $sanction->sanction_count,
+                    'total_amount' => $sanction->total_amount,
+                    'unpaid_amount' => $sanction->unpaid_amount,
+                    'paid_amount' => $sanction->paid_amount,
+                ];
+            });
+
+        $pdf = \PDF::loadView('pdf.member-sanctions', [
+            'memberSanctions' => $memberSanctions,
+            'generatedAt' => now()->format('F d, Y h:i A')
+        ]);
+
+        return $pdf->download('member-sanctions-' . now()->format('Y-m-d') . '.pdf');
+    }
 }

@@ -132,6 +132,11 @@ export default function EventSanctionsTable({ sanctions, event }) {
     };
 
     const getSanctionType = (sanction) => {
+        // If status is excused, show "Excused" as the type
+        if (sanction.status === 'excused') {
+            return 'Excused';
+        }
+        
         if (sanction.reason === 'No time in') {
             return 'No Time In';
         } else if (sanction.reason === 'No time out') {
@@ -143,6 +148,11 @@ export default function EventSanctionsTable({ sanctions, event }) {
     };
 
     const getSanctionTypeColor = (sanction) => {
+        // If status is excused, show purple color
+        if (sanction.status === 'excused') {
+            return 'bg-purple-100 text-purple-800';
+        }
+        
         if (sanction.reason === 'No time in') {
             return 'bg-orange-100 text-orange-800';
         } else if (sanction.reason === 'No time out') {

@@ -19,7 +19,8 @@ class FaceIOController extends Controller
             $validator = Validator::make($request->all(), [
                 'member_id' => 'required|exists:members,member_id',
                 'face_id' => 'required|string',
-                'face_descriptor' => 'required|array'
+                'face_descriptor' => 'required|array',
+                'face_image' => 'nullable|string' // Base64 encoded image
             ]);
 
             if ($validator->fails()) {
@@ -35,11 +36,18 @@ class FaceIOController extends Controller
             // Store face ID and descriptor
             $member->faceio_id = $request->face_id;
             $member->face_descriptor = json_encode($request->face_descriptor);
+            
+            // Store face image if provided
+            if ($request->has('face_image') && !empty($request->face_image)) {
+                $member->face_image = $request->face_image;
+            }
+            
             $member->save();
 
             Log::info('Member face enrolled', [
                 'member_id' => $member->member_id,
-                'face_id' => $request->face_id
+                'face_id' => $request->face_id,
+                'has_image' => !empty($request->face_image)
             ]);
 
             return response()->json([
@@ -236,6 +244,130 @@ class FaceIOController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to verify student ID: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Enroll admin user's face
+     */
+    public function enrollAdmin(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'user_id' => 'required|exists:users,id',
+                'face_id' => 'required|string',
+                'face_descriptor' => 'required|array',
+                'face_image' => 'nullable|string'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $user = User::findOrFail($request->user_id);
+            
+            // Store face ID and descriptor
+            $user->faceio_id = $request->face_id;
+            $user->face_descriptor = json_encode($request->face_descriptor);
+            
+            // Store face image if provided
+            if ($request->has('face_image') && !empty($request->face_image)) {
+                $user->face_image = $request->face_image;
+            }
+            
+            $user->save();
+
+            Log::info('Admin face enrolled', [
+                'user_id' => $user->id,
+                'face_id' => $request->face_id,
+                'has_image' => !empty($request->face_image)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Admin face enrolled successfully',
+                'user' => $user
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Admin face enrollment failed', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin face enrollment failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Get all enrolled admin faces for authentication
+     */
+    public function getEnrolledAdmins()
+    {
+        try {
+            $users = User::whereNotNull('face_descriptor')
+                ->whereNotNull('faceio_id')
+                ->get(['id', 'name', 'email', 'faceio_id', 'face_descriptor']);
+
+            $enrolledFaces = $users->map(function ($user) {
+                return [
+                    'faceId' => $user->faceio_id,
+                    'descriptor' => json_decode($user->face_descriptor),
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                    ]
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'faces' => $enrolledFaces
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to get enrolled admin faces', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get enrolled admin faces: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Remove admin face enrollment
+     */
+    public function unenrollAdmin(Request $request, $userId)
+    {
+        try {
+            $user = User::findOrFail($userId);
+            
+            $oldFaceioId = $user->faceio_id;
+            $user->faceio_id = null;
+            $user->face_descriptor = null;
+            $user->face_image = null;
+            $user->save();
+
+            Log::info('Admin face unenrolled', [
+                'user_id' => $user->id,
+                'old_faceio_id' => $oldFaceioId
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Admin face enrollment removed successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Admin face unenrollment failed', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin face unenrollment failed: ' . $e->getMessage()
             ], 500);
         }
     }

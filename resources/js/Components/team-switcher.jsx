@@ -25,9 +25,9 @@ export function TeamSwitcher({ teams }) {
 
     const renderLogo = (logo) =>
         typeof logo === "string" ? (
-            <img src={logo} alt="team logo" className="size-4 rounded-full" />
+            <img src={logo} alt="team logo" className="size-8 rounded-full" />
         ) : (
-            <logo className="size-4" />
+            <logo className="size-8" />
         );
 
     return (
@@ -39,7 +39,7 @@ export function TeamSwitcher({ teams }) {
                             size="lg"
                             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                         >
-                            <div className="flex aspect-square size-10 items-center justify-center">
+                            <div className="flex aspect-square size-14 items-center justify-center">
                                 {renderLogo(activeTeam.logo)}
                             </div>
 

@@ -245,4 +245,41 @@ class SanctionService
             ->orderBy('created_at', 'desc')
             ->get();
     }
+    
+    /**
+     * Delete all sanctions for a specific event
+     * Used when reopening timeout to clear previously calculated sanctions
+     * 
+     * @param int $eventId
+     * @return array
+     */
+    public function deleteSanctionsForEvent($eventId)
+    {
+        try {
+            $deletedCount = Sanction::where('event_id', $eventId)->delete();
+            
+            Log::info('Sanctions deleted for event', [
+                'event_id' => $eventId,
+                'deleted_count' => $deletedCount
+            ]);
+            
+            return [
+                'success' => true,
+                'message' => 'Sanctions deleted successfully',
+                'deleted_count' => $deletedCount
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to delete sanctions', [
+                'event_id' => $eventId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return [
+                'success' => false,
+                'message' => 'Failed to delete sanctions: ' . $e->getMessage(),
+                'deleted_count' => 0
+            ];
+        }
+    }
 }
