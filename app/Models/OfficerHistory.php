@@ -17,6 +17,7 @@ class OfficerHistory extends Model
         'member_id',
         'batch_id',
         'position',
+        'sex',
         'action',
         'start_date',
         'end_date',

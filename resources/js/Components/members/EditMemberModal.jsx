@@ -6,6 +6,7 @@ export default function EditMemberModal({
     handleChange,
     handleSubmit,
     closeModal,
+    batches = [],
 }) {
     const [isVisible, setIsVisible] = useState(false);
 
@@ -97,6 +98,13 @@ export default function EditMemberModal({
                                 ],
                             },
                             {
+                                label: "Batch",
+                                name: "batch_id",
+                                type: "select",
+                                options: batches.map(b => ({ value: b.id, label: `${b.year} - ${b.name}` })),
+                                isObjectOptions: true,
+                            },
+                            {
                                 label: "Status",
                                 name: "status",
                                 type: "select",
@@ -129,11 +137,18 @@ export default function EditMemberModal({
                                         <option value="">
                                             Select {field.label}
                                         </option>
-                                        {field.options.map((opt) => (
-                                            <option key={opt} value={opt}>
-                                                {opt}
-                                            </option>
-                                        ))}
+                                        {field.isObjectOptions 
+                                            ? field.options.map((opt) => (
+                                                <option key={opt.value} value={opt.value}>
+                                                    {opt.label}
+                                                </option>
+                                            ))
+                                            : field.options.map((opt) => (
+                                                <option key={opt} value={opt}>
+                                                    {opt}
+                                                </option>
+                                            ))
+                                        }
                                     </select>
                                 ) : (
                                     <input

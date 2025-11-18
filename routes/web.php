@@ -38,11 +38,19 @@ Route::middleware('auth')->group(function () {
 //Members
 Route::middleware('auth')->group(function () {
     Route::get('/members', [MemberController::class, 'index'])->name('members.index');
+    Route::get('/members/chart', [MemberController::class, 'chart'])->name('members.chart');
     Route::get('/members/export-pdf', [MemberController::class, 'exportPDF'])->name('members.export-pdf');
+    
+    // Member History (must come before {member} routes)
+    Route::get('/members/history/list', [App\Http\Controllers\MemberHistoryController::class, 'index'])->name('members.history');
+    Route::get('/members/history/export-pdf', [App\Http\Controllers\MemberHistoryController::class, 'exportPDF'])->name('members.history.export-pdf');
+    Route::get('/members/history/{member}', [App\Http\Controllers\MemberHistoryController::class, 'show'])->name('members.history.show');
+    
     Route::post('/members', [MemberController::class, 'store'])->name('members.store');
-    Route::get('/members/{member}', [MemberController::class, 'show'])->name('members.show');
-    Route::put('/members/{member}', [MemberController::class, 'update'])->name('members.update');
-    Route::delete('/members/{member}', [MemberController::class, 'destroy'])->name('members.destroy');
+    Route::post('/members/bulk-import', [MemberController::class, 'bulkImport'])->name('members.bulk-import');
+    Route::get('/members/{member_id}', [MemberController::class, 'show'])->name('members.show');
+    Route::put('/members/{member_id}', [MemberController::class, 'update'])->name('members.update');
+    Route::delete('/members/{member_id}', [MemberController::class, 'destroy'])->name('members.destroy');
     Route::post('/members/{member}/upload-picture', [MemberController::class, 'uploadProfilePicture'])->name('members.upload-picture');
     Route::get('/members/{id}/register-face', function ($id) {
         $member = Member::findOrFail($id);

@@ -6,11 +6,12 @@ export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
     const [isVisible, setIsVisible] = useState(false);
     const [batchName, setBatchName] = useState("");
     const [officers, setOfficers] = useState([
-        { position: "", member_name: "", student_id: "", status: "Alumni" }
+        { position: "", member_name: "", student_id: "", sex: "", status: "Alumni" }
     ]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const statusOptions = ["Alumni", "Active", "Inactive"];
+    const sexOptions = ["Male", "Female", "Others"];
 
     const positions = [
         "President",
@@ -61,7 +62,7 @@ export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
     const addOfficerRow = () => {
         setOfficers([
             ...officers,
-            { position: "", member_name: "", student_id: "", status: "Alumni" }
+            { position: "", member_name: "", student_id: "", sex: "", status: "Alumni" }
         ]);
     };
 
@@ -171,6 +172,7 @@ export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
                         position: o.position,
                         member_name: o.member_name,
                         student_id: o.student_id || null,
+                        sex: o.sex || null,
                         status: o.status,
                     })),
                 }),
@@ -200,7 +202,7 @@ export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
     const resetForm = () => {
         setBatchName("");
         setOfficers([
-            { position: "", member_name: "", student_id: "", status: "Alumni" }
+            { position: "", member_name: "", student_id: "", sex: "", status: "Alumni" }
         ]);
     };
 
@@ -231,13 +233,13 @@ export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
                 }`}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b">
-                    <h2 className="text-2xl font-bold text-blue-600">
+                <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-blue-600 to-blue-700">
+                    <h2 className="text-2xl font-bold text-white">
                         Add Batch Officers
                     </h2>
                     <button
                         onClick={handleClose}
-                        className="text-gray-400 hover:text-gray-600 transition"
+                        className="text-white hover:text-gray-200 transition"
                     >
                         <X className="h-6 w-6" />
                     </button>
@@ -271,7 +273,7 @@ export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
                                     <button
                                         type="button"
                                         onClick={addOfficerRow}
-                                        className="flex items-center px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                                        className="flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                                     >
                                         <Plus className="h-4 w-4 mr-1" />
                                         Add Officer
@@ -281,8 +283,9 @@ export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
                                 <div className="space-y-3 max-h-96 overflow-y-auto border rounded-lg p-4 bg-gray-50">
                                     <div className="grid grid-cols-12 gap-2 px-3 pb-2 text-xs font-semibold text-gray-600 border-b">
                                         <div className="col-span-3">Position</div>
-                                        <div className="col-span-4">Member Name</div>
+                                        <div className="col-span-3">Member Name</div>
                                         <div className="col-span-2">Student ID</div>
+                                        <div className="col-span-1">Sex</div>
                                         <div className="col-span-2">Status</div>
                                         <div className="col-span-1"></div>
                                     </div>
@@ -316,7 +319,7 @@ export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
                                             </div>
 
                                             {/* Member Name (Typable) */}
-                                            <div className="col-span-4">
+                                            <div className="col-span-3">
                                                 <input
                                                     type="text"
                                                     value={officer.member_name}
@@ -340,6 +343,24 @@ export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
                                                     placeholder="XX-XXXXX"
                                                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                                                 />
+                                            </div>
+
+                                            {/* Sex Dropdown */}
+                                            <div className="col-span-1">
+                                                <select
+                                                    value={officer.sex}
+                                                    onChange={(e) =>
+                                                        updateOfficer(index, "sex", e.target.value)
+                                                    }
+                                                    className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="">-</option>
+                                                    {sexOptions.map((sex) => (
+                                                        <option key={sex} value={sex}>
+                                                            {sex.charAt(0)}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
 
                                             {/* Status Dropdown */}

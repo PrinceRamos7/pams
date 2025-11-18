@@ -12,6 +12,11 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
+    // Role constants
+    const ROLE_ADMIN = 'admin';
+    const ROLE_ATTENDANCE_OFFICER = 'attendance_officer';
+    const ROLE_BUSINESS_MANAGER = 'business_manager';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -21,6 +26,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
         'faceio_id',
         'face_descriptor',
         'face_image',
@@ -47,5 +53,45 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Check if user is admin
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    /**
+     * Check if user is attendance officer
+     */
+    public function isAttendanceOfficer(): bool
+    {
+        return $this->role === self::ROLE_ATTENDANCE_OFFICER;
+    }
+
+    /**
+     * Check if user is business manager
+     */
+    public function isBusinessManager(): bool
+    {
+        return $this->role === self::ROLE_BUSINESS_MANAGER;
+    }
+
+    /**
+     * Check if user has access to attendance features
+     */
+    public function canManageAttendance(): bool
+    {
+        return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_ATTENDANCE_OFFICER]);
+    }
+
+    /**
+     * Check if user has access to financial features
+     */
+    public function canManageFinances(): bool
+    {
+        return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_BUSINESS_MANAGER]);
     }
 }

@@ -3,20 +3,24 @@ import { X, Plus, Trash2 } from "lucide-react";
 import { router } from "@inertiajs/react";
 import NotificationModal from "../NotificationModal";
 
-export default function BulkAddOfficersModal({ closeModal, existingOfficers = [], onNotify }) {
+export default function BulkAddOfficersModal({
+    closeModal,
+    existingOfficers = [],
+    onNotify,
+}) {
     const [members, setMembers] = useState([]);
     const [batches, setBatches] = useState([]);
     const [batchName, setBatchName] = useState("");
     const [selectedBatchId, setSelectedBatchId] = useState("");
     const [createNewBatch, setCreateNewBatch] = useState(false);
     const [officers, setOfficers] = useState([
-        { id: 1, member_id: "", position: "" }
+        { id: 1, member_id: "", position: "" },
     ]);
     const [notificationModal, setNotificationModal] = useState({
         isOpen: false,
         type: "success",
         title: "",
-        message: ""
+        message: "",
     });
 
     const showNotificationModal = (title, message, type = "success") => {
@@ -24,7 +28,7 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
             isOpen: true,
             type,
             title,
-            message
+            message,
         });
     };
 
@@ -43,14 +47,17 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
         "Media Team Managing Director",
     ];
 
-    const multiMemberPositions = ["Public Information Officer (PIO)", "Business Manager"];
+    const multiMemberPositions = [
+        "Public Information Officer (PIO)",
+        "Business Manager",
+    ];
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 // Fetch members
                 const membersRes = await fetch("/members", {
-                    headers: { 'Accept': 'application/json' }
+                    headers: { Accept: "application/json" },
                 });
                 if (membersRes.ok) {
                     const membersData = await membersRes.json();
@@ -63,7 +70,7 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
 
                 // Fetch batches
                 const batchesRes = await fetch("/batches", {
-                    headers: { 'Accept': 'application/json' }
+                    headers: { Accept: "application/json" },
                 });
                 if (batchesRes.ok) {
                     const batchesData = await batchesRes.json();
@@ -77,59 +84,66 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
     }, []);
 
     const addOfficerRow = () => {
-        setOfficers([...officers, { id: Date.now(), member_id: "", position: "" }]);
+        setOfficers([
+            ...officers,
+            { id: Date.now(), member_id: "", position: "" },
+        ]);
     };
 
     const removeOfficerRow = (id) => {
         if (officers.length > 1) {
-            setOfficers(officers.filter(officer => officer.id !== id));
+            setOfficers(officers.filter((officer) => officer.id !== id));
         }
     };
 
     const handleChange = (id, field, value) => {
-        setOfficers(officers.map(officer => 
-            officer.id === id ? { ...officer, [field]: value } : officer
-        ));
+        setOfficers(
+            officers.map((officer) =>
+                officer.id === id ? { ...officer, [field]: value } : officer
+            )
+        );
     };
 
     const getAvailableMembers = (currentOfficerId) => {
         // Get members already selected in the form
         const selectedMemberIds = officers
-            .filter(o => o.id !== currentOfficerId && o.member_id)
-            .map(o => parseInt(o.member_id));
-        
+            .filter((o) => o.id !== currentOfficerId && o.member_id)
+            .map((o) => parseInt(o.member_id));
+
         // Get members who already have officer positions
-        const existingOfficerMemberIds = Array.isArray(existingOfficers) 
-            ? existingOfficers.map(o => o.member_id)
+        const existingOfficerMemberIds = Array.isArray(existingOfficers)
+            ? existingOfficers.map((o) => o.member_id)
             : [];
-        
-        return members.filter(member => 
-            !selectedMemberIds.includes(member.member_id) &&
-            !existingOfficerMemberIds.includes(member.member_id)
+
+        return members.filter(
+            (member) =>
+                !selectedMemberIds.includes(member.member_id) &&
+                !existingOfficerMemberIds.includes(member.member_id)
         );
     };
 
     const getAvailablePositions = (currentOfficerId) => {
         // Get positions already selected in the form
         const selectedPositions = officers
-            .filter(o => o.id !== currentOfficerId && o.position)
-            .map(o => o.position);
-        
+            .filter((o) => o.id !== currentOfficerId && o.position)
+            .map((o) => o.position);
+
         // Count existing positions
         const existingPositionCounts = {};
         if (Array.isArray(existingOfficers)) {
-            existingOfficers.forEach(officer => {
-                existingPositionCounts[officer.position] = 
+            existingOfficers.forEach((officer) => {
+                existingPositionCounts[officer.position] =
                     (existingPositionCounts[officer.position] || 0) + 1;
             });
         }
-        
+
         // Count selected positions in form
-        selectedPositions.forEach(pos => {
-            existingPositionCounts[pos] = (existingPositionCounts[pos] || 0) + 1;
+        selectedPositions.forEach((pos) => {
+            existingPositionCounts[pos] =
+                (existingPositionCounts[pos] || 0) + 1;
         });
-        
-        return positions.filter(pos => {
+
+        return positions.filter((pos) => {
             const count = existingPositionCounts[pos] || 0;
             if (multiMemberPositions.includes(pos)) {
                 return count < 2;
@@ -171,7 +185,7 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
         }
 
         // Check for duplicate members
-        const memberIds = officers.map(o => o.member_id);
+        const memberIds = officers.map((o) => o.member_id);
         const uniqueMemberIds = new Set(memberIds);
         if (memberIds.length !== uniqueMemberIds.size) {
             showNotificationModal(
@@ -184,7 +198,7 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
 
         // Check for duplicate positions (except multi-member positions)
         const positionCounts = {};
-        officers.forEach(o => {
+        officers.forEach((o) => {
             positionCounts[o.position] = (positionCounts[o.position] || 0) + 1;
         });
 
@@ -215,34 +229,36 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!validateForm()) {
             return;
         }
 
         // Prepare data for bulk insert
-        const officersData = officers.map(o => ({
+        const officersData = officers.map((o) => ({
             member_id: parseInt(o.member_id),
-            position: o.position
+            position: o.position,
         }));
 
         const requestData = {
             officers: officersData,
             batch_id: createNewBatch ? null : parseInt(selectedBatchId),
-            batch_name: createNewBatch ? batchName.trim() : null
+            batch_name: createNewBatch ? batchName.trim() : null,
         };
 
         try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content");
-            
-            const response = await fetch('/officers/bulk', {
-                method: 'POST',
+            const csrfToken = document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute("content");
+
+            const response = await fetch("/officers/bulk", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    "X-CSRF-TOKEN": csrfToken,
                 },
-                body: JSON.stringify(requestData)
+                body: JSON.stringify(requestData),
             });
 
             const result = await response.json();
@@ -284,7 +300,7 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
                     {/* Header */}
                     <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 rounded-t-2xl flex justify-between items-center">
                         <h2 className="text-2xl font-bold text-white">
-                            Bulk Add Officers
+                            Add Officers
                         </h2>
                         <button
                             onClick={closeModal}
@@ -298,23 +314,30 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
                     <form onSubmit={handleSubmit} className="p-6">
                         <div className="mb-4">
                             <p className="text-sm text-gray-600">
-                                Add multiple officers at once. Each member can only hold one position.
+                                Add multiple officers at once. Each member can
+                                only hold one position.
                             </p>
                         </div>
 
                         {/* Batch Selection */}
                         <div className="mb-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
-                            <h3 className="font-semibold text-gray-800 mb-3">Batch Information</h3>
-                            
+                            <h3 className="font-semibold text-gray-800 mb-3">
+                                Batch Information
+                            </h3>
+
                             <div className="flex items-center gap-4 mb-3">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
                                         type="radio"
                                         checked={!createNewBatch}
-                                        onChange={() => setCreateNewBatch(false)}
+                                        onChange={() =>
+                                            setCreateNewBatch(false)
+                                        }
                                         className="w-4 h-4 text-blue-600"
                                     />
-                                    <span className="text-sm font-medium">Select Existing Batch</span>
+                                    <span className="text-sm font-medium">
+                                        Select Existing Batch
+                                    </span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
@@ -323,21 +346,28 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
                                         onChange={() => setCreateNewBatch(true)}
                                         className="w-4 h-4 text-blue-600"
                                     />
-                                    <span className="text-sm font-medium">Create New Batch</span>
+                                    <span className="text-sm font-medium">
+                                        Create New Batch
+                                    </span>
                                 </label>
                             </div>
 
                             {!createNewBatch ? (
                                 <select
                                     value={selectedBatchId}
-                                    onChange={(e) => setSelectedBatchId(e.target.value)}
+                                    onChange={(e) =>
+                                        setSelectedBatchId(e.target.value)
+                                    }
                                     required
                                     className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 >
                                     <option value="">Select Batch</option>
                                     {batches.map((batch) => (
                                         <option key={batch.id} value={batch.id}>
-                                            {batch.name} {batch.year ? `(${batch.year})` : ''}
+                                            {batch.name}{" "}
+                                            {batch.year
+                                                ? `(${batch.year})`
+                                                : ""}
                                         </option>
                                     ))}
                                 </select>
@@ -345,7 +375,9 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
                                 <input
                                     type="text"
                                     value={batchName}
-                                    onChange={(e) => setBatchName(e.target.value)}
+                                    onChange={(e) =>
+                                        setBatchName(e.target.value)
+                                    }
                                     placeholder="Enter batch name (e.g., Batch 2024-2025)"
                                     required
                                     className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -356,11 +388,14 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
                         {/* Officers List */}
                         <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                             {officers.map((officer, index) => (
-                                <div key={officer.id} className="flex gap-3 items-start p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
+                                <div
+                                    key={officer.id}
+                                    className="flex gap-3 items-start p-4 bg-gray-50 rounded-lg border-2 border-gray-200"
+                                >
                                     <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
                                         {index + 1}
                                     </div>
-                                    
+
                                     {/* Member Select */}
                                     <div className="flex-1">
                                         <label className="block text-xs font-semibold text-gray-700 mb-1">
@@ -368,14 +403,28 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
                                         </label>
                                         <select
                                             value={officer.member_id}
-                                            onChange={(e) => handleChange(officer.id, 'member_id', e.target.value)}
+                                            onChange={(e) =>
+                                                handleChange(
+                                                    officer.id,
+                                                    "member_id",
+                                                    e.target.value
+                                                )
+                                            }
                                             required
                                             className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         >
-                                            <option value="">Select Member</option>
-                                            {getAvailableMembers(officer.id).map((m) => (
-                                                <option key={m.member_id} value={m.member_id}>
-                                                    {m.firstname} {m.lastname} ({m.student_id})
+                                            <option value="">
+                                                Select Member
+                                            </option>
+                                            {getAvailableMembers(
+                                                officer.id
+                                            ).map((m) => (
+                                                <option
+                                                    key={m.member_id}
+                                                    value={m.member_id}
+                                                >
+                                                    {m.firstname} {m.lastname} (
+                                                    {m.student_id})
                                                 </option>
                                             ))}
                                         </select>
@@ -388,12 +437,22 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
                                         </label>
                                         <select
                                             value={officer.position}
-                                            onChange={(e) => handleChange(officer.id, 'position', e.target.value)}
+                                            onChange={(e) =>
+                                                handleChange(
+                                                    officer.id,
+                                                    "position",
+                                                    e.target.value
+                                                )
+                                            }
                                             required
                                             className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         >
-                                            <option value="">Select Position</option>
-                                            {getAvailablePositions(officer.id).map((pos) => (
+                                            <option value="">
+                                                Select Position
+                                            </option>
+                                            {getAvailablePositions(
+                                                officer.id
+                                            ).map((pos) => (
                                                 <option key={pos} value={pos}>
                                                     {pos}
                                                 </option>
@@ -404,12 +463,14 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
                                     {/* Remove Button */}
                                     <button
                                         type="button"
-                                        onClick={() => removeOfficerRow(officer.id)}
+                                        onClick={() =>
+                                            removeOfficerRow(officer.id)
+                                        }
                                         disabled={officers.length === 1}
                                         className={`flex-shrink-0 mt-6 p-2 rounded-lg transition ${
                                             officers.length === 1
-                                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                                : 'bg-red-100 text-red-600 hover:bg-red-200'
+                                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                : "bg-red-100 text-red-600 hover:bg-red-200"
                                         }`}
                                     >
                                         <Trash2 size={18} />
@@ -441,7 +502,8 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
                                 type="submit"
                                 className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition transform hover:scale-105 shadow-lg"
                             >
-                                Add {officers.length} Officer{officers.length > 1 ? 's' : ''}
+                                Add {officers.length} Officer
+                                {officers.length > 1 ? "s" : ""}
                             </button>
                         </div>
                     </form>
@@ -451,7 +513,12 @@ export default function BulkAddOfficersModal({ closeModal, existingOfficers = []
             {/* Notification Modal */}
             <NotificationModal
                 isOpen={notificationModal.isOpen}
-                onClose={() => setNotificationModal({ ...notificationModal, isOpen: false })}
+                onClose={() =>
+                    setNotificationModal({
+                        ...notificationModal,
+                        isOpen: false,
+                    })
+                }
                 type={notificationModal.type}
                 title={notificationModal.title}
                 message={notificationModal.message}

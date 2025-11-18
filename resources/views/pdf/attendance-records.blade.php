@@ -131,7 +131,7 @@
                     @if($record->time_in)
                         {{ \Carbon\Carbon::parse($record->time_in)->format('h:i A') }}
                     @else
-                        N/A
+                        <span style="color: #D97706; font-weight: bold;">No Time In</span>
                     @endif
                 </td>
                 <td>
@@ -144,10 +144,14 @@
                 <td>
                     <span class="badge 
                         @if($record->status === 'Present') badge-present
-                        @elseif($record->status === 'late') badge-late
+                        @elseif($record->status === 'late' || $record->status === 'no_time_in') badge-late
                         @else badge-absent
                         @endif">
-                        {{ ucfirst($record->status) }}
+                        @if($record->status === 'no_time_in')
+                            No Time In
+                        @else
+                            {{ ucfirst($record->status) }}
+                        @endif
                     </span>
                 </td>
             </tr>

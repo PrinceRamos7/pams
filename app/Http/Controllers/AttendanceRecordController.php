@@ -8,6 +8,7 @@ use App\Models\AttendanceEvent;
 use App\Models\Member;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Inertia\Inertia;
 
 class AttendanceRecordController extends Controller
@@ -389,7 +390,7 @@ class AttendanceRecordController extends Controller
             ->orderBy('time_in', 'asc')
             ->get();
 
-        $pdf = \PDF::loadView('pdf.attendance-records', [
+        $pdf = Pdf::loadView('pdf.attendance-records', [
             'event' => $event,
             'records' => $records,
             'generatedAt' => now()->format('F d, Y h:i A')

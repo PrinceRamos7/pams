@@ -107,9 +107,10 @@
                     <table>
                         <thead>
                             <tr>
-                                <th style="width: 30%;">Position</th>
-                                <th style="width: 35%;">Member Name</th>
-                                <th style="width: 20%;">Student ID</th>
+                                <th style="width: 28%;">Position</th>
+                                <th style="width: 30%;">Member Name</th>
+                                <th style="width: 17%;">Student ID</th>
+                                <th style="width: 10%;">Sex</th>
                                 <th style="width: 15%;">Status</th>
                             </tr>
                         </thead>
@@ -119,6 +120,7 @@
                                     <td><strong>{{ $officer['position'] }}</strong></td>
                                     <td>{{ $officer['member_name'] }}</td>
                                     <td>{{ $officer['student_id'] }}</td>
+                                    <td>{{ $officer['sex'] ?? '-' }}</td>
                                     <td>
                                         @if(isset($officer['status']) && $officer['status'] === 'Alumni')
                                             <span class="status-badge" style="background-color: #f3e8ff; color: #6b21a8;">Alumni</span>

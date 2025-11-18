@@ -95,6 +95,8 @@ export default function FaceTimeIn({ event }) {
             const enrolledResponse = await fetch("/api/faceio/enrolled-faces");
             const enrolledData = await enrolledResponse.json();
 
+            console.log('📥 Enrolled faces received:', enrolledData);
+
             if (!enrolledData.success || !enrolledData.faces || enrolledData.faces.length === 0) {
                 toast.dismiss();
                 toast.error("No enrolled faces found");
@@ -105,6 +107,7 @@ export default function FaceTimeIn({ event }) {
             await new Promise(resolve => setTimeout(resolve, 500));
 
             const result = await authenticateFace(videoRef.current, enrolledData.faces);
+            console.log('🎯 Authentication result:', result);
             toast.dismiss();
 
             if (!result.success) {
@@ -122,6 +125,7 @@ export default function FaceTimeIn({ event }) {
                 return;
             }
 
+            console.log('✅ Matched Member:', result.member);
             toast.success("Face verified successfully!");
 
             // Record attendance
@@ -144,7 +148,7 @@ export default function FaceTimeIn({ event }) {
     };
 
     // Record attendance
-    const recordAttendance = async (faceId, member) => {
+    const recordAttendance = async (faceId, recognizedMember) => {
         const csrfToken = document
             .querySelector('meta[name="csrf-token"]')
             ?.getAttribute("content");
@@ -167,11 +171,11 @@ export default function FaceTimeIn({ event }) {
             const data = await response.json();
 
             if (data.success) {
-                // Show success modal with member details
+                // Show success modal with the RECOGNIZED member details (not from backend)
                 setSuccessData({
-                    name: `${member.firstname} ${member.lastname}`,
-                    studentId: member.student_id,
-                    year: member.year || member.year_level || 'Not Set'
+                    name: `${recognizedMember.firstname} ${recognizedMember.lastname}`,
+                    studentId: recognizedMember.student_id,
+                    year: recognizedMember.year || recognizedMember.year_level || 'Not Set'
                 });
                 setShowSuccessModal(true);
                 

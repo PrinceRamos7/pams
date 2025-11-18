@@ -95,6 +95,8 @@ export default function FaceTimeOut({ event }) {
             const enrolledResponse = await fetch("/api/faceio/enrolled-faces");
             const enrolledData = await enrolledResponse.json();
 
+            console.log('📥 Enrolled faces received:', enrolledData);
+
             if (!enrolledData.success || !enrolledData.faces || enrolledData.faces.length === 0) {
                 toast.dismiss();
                 toast.error("No enrolled faces found");
@@ -105,6 +107,7 @@ export default function FaceTimeOut({ event }) {
             await new Promise(resolve => setTimeout(resolve, 500));
 
             const result = await authenticateFace(videoRef.current, enrolledData.faces);
+            console.log('🎯 Authentication result:', result);
             toast.dismiss();
 
             if (!result.success) {
@@ -122,6 +125,7 @@ export default function FaceTimeOut({ event }) {
                 return;
             }
 
+            console.log('✅ Matched Member:', result.member);
             toast.success("Face verified successfully!");
 
             // Record time out
@@ -144,14 +148,14 @@ export default function FaceTimeOut({ event }) {
     };
 
     // Record time out
-    const recordTimeOut = async (_faceId, member) => {
+    const recordTimeOut = async (_faceId, recognizedMember) => {
         const csrfToken = document
             .querySelector('meta[name="csrf-token"]')
             ?.getAttribute("content");
 
         try {
             // First, find the attendance record for this member and event
-            const findResponse = await fetch(`/api/attendance-records/find?event_id=${event.event_id}&member_id=${member.member_id}`, {
+            const findResponse = await fetch(`/api/attendance-records/find?event_id=${event.event_id}&member_id=${recognizedMember.member_id}`, {
                 headers: {
                     "Accept": "application/json",
                     "X-CSRF-TOKEN": csrfToken,
@@ -161,9 +165,45 @@ export default function FaceTimeOut({ event }) {
             const findData = await findResponse.json();
 
             if (!findData.success || !findData.record) {
-                setErrorMessage("No time-in record found. Please time-in first.");
-                setShowErrorModal(true);
-                setIsProcessing(false);
+                // No time-in record found - create a new record with only time-out (marked as "no time in")
+                const createResponse = await fetch("/attendance-records", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                        "X-CSRF-TOKEN": csrfToken,
+                    },
+                    body: JSON.stringify({
+                        event_id: event.event_id,
+                        faceio_id: recognizedMember.faceio_id,
+                        status: "no_time_in",
+                        time_out_only: true,
+                    }),
+                });
+
+                const createData = await createResponse.json();
+
+                if (createData.success) {
+                    // Show success modal with warning about no time-in
+                    setSuccessData({
+                        name: `${recognizedMember.firstname} ${recognizedMember.lastname}`,
+                        studentId: recognizedMember.student_id,
+                        year: recognizedMember.year || recognizedMember.year_level || 'Not Set',
+                        noTimeIn: true
+                    });
+                    setShowSuccessModal(true);
+                    
+                    // Reset for next person after 3 seconds
+                    setTimeout(() => {
+                        setShowSuccessModal(false);
+                        setAttemptCount(0);
+                        setIsProcessing(false);
+                    }, 3000);
+                } else {
+                    setErrorMessage(createData.message || "Failed to record time out");
+                    setShowErrorModal(true);
+                    setIsProcessing(false);
+                }
                 return;
             }
 
@@ -183,11 +223,11 @@ export default function FaceTimeOut({ event }) {
             const data = await response.json();
 
             if (data.success) {
-                // Show success modal with member details
+                // Show success modal with the RECOGNIZED member details (not from backend)
                 setSuccessData({
-                    name: `${member.firstname} ${member.lastname}`,
-                    studentId: member.student_id,
-                    year: member.year || member.year_level || 'Not Set'
+                    name: `${recognizedMember.firstname} ${recognizedMember.lastname}`,
+                    studentId: recognizedMember.student_id,
+                    year: recognizedMember.year || recognizedMember.year_level || 'Not Set'
                 });
                 setShowSuccessModal(true);
                 
@@ -475,14 +515,33 @@ export default function FaceTimeOut({ event }) {
             {showSuccessModal && successData && (
                 <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full animate-zoom-in overflow-hidden">
-                        <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-6 text-center">
+                        <div className={`${successData.noTimeIn ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-gradient-to-r from-blue-500 to-indigo-500'} p-6 text-center`}>
                             <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-white mb-4 shadow-lg">
-                                <CheckCircle2 className="h-12 w-12 text-blue-600" />
+                                {successData.noTimeIn ? (
+                                    <AlertCircle className="h-12 w-12 text-amber-600" />
+                                ) : (
+                                    <CheckCircle2 className="h-12 w-12 text-blue-600" />
+                                )}
                             </div>
-                            <h3 className="text-2xl font-bold text-white mb-1">Time Out Successful!</h3>
-                            <p className="text-blue-100">Time out has been recorded</p>
+                            <h3 className="text-2xl font-bold text-white mb-1">Time Out Recorded!</h3>
+                            <p className={`${successData.noTimeIn ? 'text-amber-100' : 'text-blue-100'}`}>
+                                {successData.noTimeIn ? 'Marked as: No Time In' : 'Time out has been recorded'}
+                            </p>
                         </div>
                         <div className="p-6">
+                            {successData.noTimeIn && (
+                                <div className="mb-4 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-lg">
+                                    <div className="flex items-start gap-3">
+                                        <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="font-semibold text-amber-900">No Time-In Record</p>
+                                            <p className="text-sm text-amber-800 mt-1">
+                                                You did not time in for this event. This will be marked accordingly.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 space-y-3 mb-6">
                                 <div className="flex justify-between items-center">
                                     <span className="text-gray-600 font-medium">Name:</span>

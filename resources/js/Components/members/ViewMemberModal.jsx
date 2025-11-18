@@ -101,26 +101,18 @@ export default function ViewMemberModal({ member, closeModal }) {
                         </div>
                         
                         <div className="flex items-start gap-3">
-                            <Cake className="text-blue-600 mt-1 flex-shrink-0" size={18} />
-                            <div className="flex-1">
-                                <p className="text-xs text-gray-500">Age</p>
-                                <p className="text-sm font-medium text-gray-800">{member.age || "-"}</p>
-                            </div>
-                        </div>
-                        
-                        <div className="flex items-start gap-3">
-                            <Calendar className="text-blue-600 mt-1 flex-shrink-0" size={18} />
-                            <div className="flex-1">
-                                <p className="text-xs text-gray-500">Birthdate</p>
-                                <p className="text-sm font-medium text-gray-800">{member.birthdate || "-"}</p>
-                            </div>
-                        </div>
-                        
-                        <div className="flex items-start gap-3">
                             <Calendar className="text-blue-600 mt-1 flex-shrink-0" size={18} />
                             <div className="flex-1">
                                 <p className="text-xs text-gray-500">Year</p>
                                 <p className="text-sm font-medium text-gray-800">{member.year || "-"}</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                            <Cake className="text-blue-600 mt-1 flex-shrink-0" size={18} />
+                            <div className="flex-1">
+                                <p className="text-xs text-gray-500">Batch</p>
+                                <p className="text-sm font-medium text-gray-800">{member.batch?.name || "-"}</p>
                             </div>
                         </div>
                     </div>

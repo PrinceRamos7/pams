@@ -160,6 +160,7 @@ export default function OfficersHistory({ batches }) {
                                                                     <th className="px-4 py-2 text-left">Position</th>
                                                                     <th className="px-4 py-2 text-left">Member Name</th>
                                                                     <th className="px-4 py-2 text-left">Student ID</th>
+                                                                    <th className="px-4 py-2 text-left">Sex</th>
                                                                     <th className="px-4 py-2 text-left">Status</th>
                                                                 </tr>
                                                             </thead>
@@ -169,6 +170,7 @@ export default function OfficersHistory({ batches }) {
                                                                         <td className="px-4 py-3 font-medium">{officer.position}</td>
                                                                         <td className="px-4 py-3">{officer.member_name}</td>
                                                                         <td className="px-4 py-3">{officer.student_id}</td>
+                                                                        <td className="px-4 py-3">{officer.sex || '-'}</td>
                                                                         <td className="px-4 py-3">
                                                                             {officer.status === 'Alumni' ? (
                                                                                 <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">

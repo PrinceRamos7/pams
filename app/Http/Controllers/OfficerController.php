@@ -410,6 +410,7 @@ class OfficerController extends Controller
                         'position' => $officer->position,
                         'member_name' => $officer->member->firstname . ' ' . $officer->member->lastname,
                         'student_id' => $officer->member->student_id,
+                        'sex' => $officer->member->sex,
                         'created_at' => $officer->created_at,
                         'end_date' => null,
                         'status' => 'Active',
@@ -462,6 +463,7 @@ class OfficerController extends Controller
                 'position' => $officer->position,
                 'member_name' => $officer->member->firstname . ' ' . $officer->member->lastname,
                 'student_id' => $officer->member->student_id,
+                'sex' => $officer->member->sex,
                 'created_at' => $officer->created_at,
                 'end_date' => null,
                 'status' => 'Active',
@@ -491,6 +493,7 @@ class OfficerController extends Controller
                 'position' => $history->position,
                 'member_name' => $memberName,
                 'student_id' => $studentId,
+                'sex' => $history->sex ?? ($history->member ? $history->member->sex : null),
                 'created_at' => $history->start_date ?? $history->created_at,
                 'end_date' => $history->end_date,
                 'status' => $history->status ?? 'Alumni',
@@ -562,6 +565,7 @@ class OfficerController extends Controller
                 'officers.*.position' => 'required|string|max:255',
                 'officers.*.member_name' => 'required|string|max:255',
                 'officers.*.student_id' => 'nullable|string|max:50',
+                'officers.*.sex' => 'nullable|string|in:Male,Female,Others',
                 'officers.*.status' => 'required|string',
             ]);
 
@@ -592,6 +596,7 @@ class OfficerController extends Controller
                     \App\Models\OfficerHistory::create([
                         'member_id' => null, // Historical officers don't have member_id
                         'position' => $officerData['position'],
+                        'sex' => $officerData['sex'] ?? null,
                         'batch_id' => $batch->id,
                         'start_date' => now(),
                         'end_date' => $status === 'Alumni' ? now() : null, // Alumni are inactive, Active have no end date

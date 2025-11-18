@@ -3,28 +3,25 @@ import { Eye, Edit, Trash2, X, Camera, MoreVertical } from "lucide-react";
 import { Inertia } from "@inertiajs/inertia";
 import { router } from "@inertiajs/react";
 import { Transition } from "@headlessui/react";
+import toast from "react-hot-toast";
 
-import AddMemberModal from "../members/AddMemberModal";
 import EditMemberModal from "../members/EditMemberModal";
 import ViewMemberModal from "./ViewMemberModal";
 import NotificationModal from "../NotificationModal";
 
-export default function MemberTable({ members }) {
+export default function MemberTable({ members, batches }) {
     const [selectedMember, setSelectedMember] = useState(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [notification, setNotification] = useState({ message: "", type: "" });
+    const [openMenuId, setOpenMenuId] = useState(null);
     const [notificationModal, setNotificationModal] = useState({
         isOpen: false,
         type: "success",
         title: "",
         message: ""
     });
-    const [openMenuId, setOpenMenuId] = useState(null);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [yearFilter, setYearFilter] = useState("all");
     const [formData, setFormData] = useState({
         student_id: "",
         firstname: "",
@@ -37,19 +34,7 @@ export default function MemberTable({ members }) {
         address: "",
         year: "",
         status: "",
-    });
-
-    // Filter members based on search and year
-    const filteredMembers = members.filter((member) => {
-        const matchesSearch = 
-            member.student_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            member.firstname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            member.lastname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            member.email?.toLowerCase().includes(searchTerm.toLowerCase());
-        
-        const matchesYear = yearFilter === "all" || member.year === yearFilter;
-        
-        return matchesSearch && matchesYear;
+        batch_id: "",
     });
 
     // Close dropdown when clicking outside
@@ -75,11 +60,6 @@ export default function MemberTable({ members }) {
     const closeViewModal = () => {
         setSelectedMember(null);
         setIsViewModalOpen(false);
-    };
-    const openAddModal = () => setIsAddModalOpen(true);
-    const closeAddModal = () => {
-        resetForm();
-        setIsAddModalOpen(false);
     };
     const openEditModal = (member) => {
         setSelectedMember(member);
@@ -127,12 +107,17 @@ export default function MemberTable({ members }) {
     };
 
     const showNotificationModal = (title, message, type = "success") => {
-        setNotificationModal({
-            isOpen: true,
-            type,
-            title,
-            message
-        });
+        if (type === "success") {
+            toast.success(message, {
+                duration: 4000,
+                position: 'top-right',
+            });
+        } else if (type === "error") {
+            toast.error(message, {
+                duration: 5000,
+                position: 'top-right',
+            });
+        }
     };
 
     // --- Submit Functions ---
@@ -317,55 +302,6 @@ export default function MemberTable({ members }) {
                 </Transition>
             </div>
 
-            {/* Header */}
-            <div className="flex justify-between items-center mb-4">
-                <h1 className="text-2xl font-bold text-gray-800">Members</h1>
-                <div className="flex gap-2">
-                    <a
-                        href={route('members.export-pdf')}
-                        target="_blank"
-                        className="px-4 py-2 font-semibold rounded-lg transition"
-                        style={{ backgroundColor: '#F7CC08', color: '#000' }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = '#E0B907'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = '#F7CC08'}
-                    >
-                        Export PDF
-                    </a>
-                    <button
-                        onClick={openAddModal}
-                        className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
-                    >
-                        Add Member
-                    </button>
-                </div>
-            </div>
-
-            {/* Search and Filter */}
-            <div className="mb-4 flex gap-3">
-                <div className="flex-1">
-                    <input
-                        type="text"
-                        placeholder="Search by Student ID, Name, or Email..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                </div>
-                <div className="w-48">
-                    <select
-                        value={yearFilter}
-                        onChange={(e) => setYearFilter(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                        <option value="all">All Years</option>
-                        <option value="First Year">First Year</option>
-                        <option value="Second Year">Second Year</option>
-                        <option value="Third Year">Third Year</option>
-                        <option value="Fourth Year">Fourth Year</option>
-                    </select>
-                </div>
-            </div>
-
             {/* Members Table */}
             <div className="rounded-lg border border-gray-200 shadow-sm">
                 <table className="min-w-full text-sm">
@@ -395,14 +331,14 @@ export default function MemberTable({ members }) {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
-                        {filteredMembers.length === 0 ? (
+                        {members.length === 0 ? (
                             <tr>
                                 <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
                                     No members found matching your search criteria.
                                 </td>
                             </tr>
                         ) : (
-                            filteredMembers.map((m, index) => (
+                            members.map((m, index) => (
                             <tr
                                 key={m.member_id || index}
                                 className="hover:bg-gray-50 transition"
@@ -486,18 +422,11 @@ export default function MemberTable({ members }) {
             </div>
 
             {/* Modals */}
-            {isAddModalOpen && (
-                <AddMemberModal
-                    formData={formData}
-                    handleChange={handleChange}
-                    handleSubmit={handleAddSubmit}
-                    closeModal={closeAddModal}
-                />
-            )}
             {isEditModalOpen && selectedMember && (
                 <EditMemberModal
                     formData={formData}
                     handleChange={handleChange}
+                    batches={batches || []}
                     handleSubmit={handleEditSubmit}
                     closeModal={closeEditModal}
                 />

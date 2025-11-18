@@ -126,19 +126,33 @@ export const authenticateFace = async (videoElement, storedDescriptors) => {
         let bestMatch = null;
         let bestDistance = 0.6; // Threshold for matching (lower = stricter)
         
+        console.log('🔍 Starting face matching...');
+        console.log('📊 Total enrolled faces:', storedDescriptors.length);
+        
         for (const stored of storedDescriptors) {
             const distance = faceapi.euclideanDistance(
                 currentDescriptor,
                 new Float32Array(stored.descriptor)
             );
             
+            console.log(`👤 Checking ${stored.member.firstname} ${stored.member.lastname} (ID: ${stored.member.student_id})`);
+            console.log(`   Distance: ${distance.toFixed(4)} (threshold: ${bestDistance})`);
+            
             if (distance < bestDistance) {
+                console.log(`   ✅ NEW BEST MATCH! Previous: ${bestMatch?.member?.firstname || 'none'}`);
                 bestDistance = distance;
                 bestMatch = stored;
+            } else {
+                console.log(`   ❌ Not a match (distance too high)`);
             }
         }
         
         if (bestMatch) {
+            console.log('🎯 FINAL MATCH:', bestMatch.member.firstname, bestMatch.member.lastname);
+            console.log('📍 Student ID:', bestMatch.member.student_id);
+            console.log('🎲 Face ID:', bestMatch.faceId);
+            console.log('📏 Final Distance:', bestDistance.toFixed(4));
+            
             return {
                 success: true,
                 member: bestMatch.member,
@@ -147,6 +161,7 @@ export const authenticateFace = async (videoElement, storedDescriptors) => {
                 distance: bestDistance
             };
         } else {
+            console.log('❌ No match found - all distances above threshold');
             return {
                 success: false,
                 error: 'Face not recognized. Please register your face first.'

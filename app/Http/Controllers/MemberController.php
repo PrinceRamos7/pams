@@ -13,9 +13,9 @@ class MemberController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Member::query();
+        $query = Member::with('batch');
         
-        // Search functionality
+        // Search functionality - searches across all records
         if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -26,6 +26,11 @@ class MemberController extends Controller
             });
         }
         
+        // Year filter
+        if ($request->has('year') && $request->year !== 'all') {
+            $query->where('year', $request->year);
+        }
+        
         // Return JSON if requested via AJAX
         if ($request->wantsJson() || $request->expectsJson()) {
             return response()->json($query->get());
@@ -34,10 +39,30 @@ class MemberController extends Controller
         // Paginate for Inertia page (10 per page)
         $members = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
         
+        // Get all batches for the form
+        $batches = \App\Models\Batch::orderBy('year', 'desc')->get();
+        
         // Otherwise return Inertia page
         return Inertia::render('Members/MemberList', [
             'members' => $members,
-            'filters' => $request->only(['search']),
+            'batches' => $batches,
+            'filters' => $request->only(['search', 'year']),
+        ]);
+    }
+
+    /**
+     * Display members chart organized by year
+     */
+    public function chart()
+    {
+        $members = Member::with('batch')
+            ->where('status', 'Active')
+            ->orderBy('year')
+            ->orderBy('lastname')
+            ->get();
+
+        return Inertia::render('Members/MembersChart', [
+            'members' => $members,
         ]);
     }
 
@@ -47,7 +72,7 @@ class MemberController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'student_id'   => ['required', 'unique:members,student_id', 'regex:/^\d{2}-\d{5}$/'],
+            'student_id'   => ['nullable', 'unique:members,student_id', 'regex:/^\d{2}-\d{5}$/'],
             'firstname'    => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
             'lastname'     => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
             'sex'          => 'required|string|max:10',
@@ -57,8 +82,8 @@ class MemberController extends Controller
             'email'        => 'nullable|email|unique:members,email',
             'address'      => 'nullable|string|max:255',
             'year'         => 'nullable|string|max:50',
+            'batch_id'     => 'nullable|exists:batches,id',
         ], [
-            'student_id.required' => 'Student ID is required.',
             'student_id.unique' => 'This Student ID is already registered.',
             'student_id.regex' => 'Student ID must be in format XX-XXXXX (e.g., 23-00001).',
             'firstname.required' => 'First name is required.',
@@ -90,9 +115,9 @@ class MemberController extends Controller
     /**
      * Update the specified member.
      */
-    public function update(Request $request, $member)
+    public function update(Request $request, $member_id)
     {
-        $member = Member::where('member_id', $member)->firstOrFail();
+        $member = Member::where('member_id', $member_id)->firstOrFail();
         
         $validated = $request->validate([
             'student_id'   => ['required', 'unique:members,student_id,' . $member->member_id . ',member_id', 'regex:/^\d{2}-\d{5}$/'],
@@ -106,6 +131,7 @@ class MemberController extends Controller
             'email'        => 'nullable|email|unique:members,email,' . $member->member_id . ',member_id',
             'address'      => 'nullable|string|max:255',
             'year'         => 'nullable|string|max:50',
+            'batch_id'     => 'nullable|exists:batches,id',
         ], [
             'student_id.required' => 'Student ID is required.',
             'student_id.unique' => 'This Student ID is already registered.',
@@ -129,9 +155,9 @@ class MemberController extends Controller
     /**
      * Remove the specified member.
      */
-    public function destroy($member)
+    public function destroy($member_id)
     {
-        $member = Member::where('member_id', $member)->firstOrFail();
+        $member = Member::where('member_id', $member_id)->firstOrFail();
         $member->delete();
         return redirect()->back()->with('success', 'Member deleted successfully!');
     }
@@ -188,7 +214,7 @@ class MemberController extends Controller
     {
         try {
             $request->validate([
-                'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:10240', // 10MB max
             ]);
 
             $member = Member::where('member_id', $memberId)->firstOrFail();
@@ -233,5 +259,91 @@ class MemberController extends Controller
                 'message' => 'Failed to upload profile picture: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Bulk import members
+     */
+    public function bulkImport(Request $request)
+    {
+        $request->validate([
+            'members' => 'required|array',
+            'members.*.firstname' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
+            'members.*.lastname' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
+            'members.*.sex' => 'required|in:Male,Female,Others',
+            'members.*.year' => 'required|in:First Year,Second Year,Third Year,Fourth Year',
+            'members.*.batch_id' => 'required|exists:batches,id',
+            'members.*.student_id' => ['nullable', 'string', 'regex:/^\d{2}-\d{5}$/', 'unique:members,student_id'],
+            'members.*.email' => 'nullable|email|unique:members,email',
+            'members.*.phone_number' => ['nullable', 'regex:/^09\d{9}$/', 'unique:members,phone_number'],
+            'members.*.address' => 'nullable|string|max:255',
+        ]);
+
+        $successCount = 0;
+        $failedCount = 0;
+        $errors = [];
+
+        foreach ($request->members as $index => $memberData) {
+            try {
+                // Check if student_id already exists (if provided)
+                if (!empty($memberData['student_id'])) {
+                    $exists = Member::where('student_id', $memberData['student_id'])->exists();
+                    if ($exists) {
+                        $failedCount++;
+                        $errors[] = "Row " . ($index + 1) . ": Student ID {$memberData['student_id']} already exists";
+                        continue;
+                    }
+                }
+
+                // Use provided email or generate one
+                $email = $memberData['email'] ?? null;
+                if (!$email) {
+                    $email = strtolower($memberData['firstname'] . '.' . $memberData['lastname'] . '@example.com');
+                    $emailCounter = 1;
+                    while (Member::where('email', $email)->exists()) {
+                        $email = strtolower($memberData['firstname'] . '.' . $memberData['lastname'] . $emailCounter . '@example.com');
+                        $emailCounter++;
+                    }
+                }
+
+                Member::create([
+                    'student_id' => $memberData['student_id'] ?? null,
+                    'firstname' => $memberData['firstname'],
+                    'lastname' => $memberData['lastname'],
+                    'sex' => $memberData['sex'],
+                    'year' => $memberData['year'],
+                    'batch_id' => $memberData['batch_id'],
+                    'email' => $email,
+                    'phone_number' => $memberData['phone_number'] ?? null,
+                    'address' => $memberData['address'] ?? null,
+                    'status' => 'Active',
+                ]);
+
+                $successCount++;
+            } catch (\Exception $e) {
+                $failedCount++;
+                $errors[] = "Row " . ($index + 1) . ": " . $e->getMessage();
+            }
+        }
+
+        // Log the import
+        \App\Models\BulkMemberImport::create([
+            'imported_by' => auth()->id(),
+            'total_records' => count($request->members),
+            'successful_records' => $successCount,
+            'failed_records' => $failedCount,
+            'errors' => $failedCount > 0 ? json_encode($errors) : null,
+            'status' => $failedCount > 0 ? 'completed_with_errors' : 'completed',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Successfully imported {$successCount} members" . ($failedCount > 0 ? " ({$failedCount} failed)" : ""),
+            'data' => [
+                'successful' => $successCount,
+                'failed' => $failedCount,
+                'errors' => $errors,
+            ]
+        ]);
     }
 }

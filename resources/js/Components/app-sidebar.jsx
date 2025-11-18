@@ -63,6 +63,14 @@ export function AppSidebar({ ...props }) {
                         url: "/members",
                     },
                     {
+                        title: "Member History",
+                        url: "/members/history/list",
+                    },
+                    {
+                        title: "Member Chart",
+                        url: "/members/chart",
+                    },
+                    {
                         title: "Officers",
                         url: "/officers",
                     },

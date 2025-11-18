@@ -191,16 +191,22 @@ export default function ViewAttendance({ event, attendanceRecords: paginatedReco
                                                                     : "N/A"}
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                                <div>
-                                                                    {formatDate(
-                                                                        record.time_in
-                                                                    )}
-                                                                </div>
-                                                                <div className="text-gray-500">
-                                                                    {formatTime(
-                                                                        record.time_in
-                                                                    )}
-                                                                </div>
+                                                                {record.time_in ? (
+                                                                    <>
+                                                                        <div>
+                                                                            {formatDate(
+                                                                                record.time_in
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="text-gray-500">
+                                                                            {formatTime(
+                                                                                record.time_in
+                                                                            )}
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <span className="text-amber-600 font-medium">No Time In</span>
+                                                                )}
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                                 {record.time_out
@@ -212,14 +218,14 @@ export default function ViewAttendance({ event, attendanceRecords: paginatedReco
                                                             <td className="px-6 py-4 whitespace-nowrap">
                                                                 <span
                                                                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                                        record.status ===
-                                                                        "Present"
+                                                                        record.status === "Present"
                                                                             ? "bg-green-100 text-green-800"
+                                                                            : record.status === "no_time_in" || record.status === "late"
+                                                                            ? "bg-amber-100 text-amber-800"
                                                                             : "bg-red-100 text-red-800"
                                                                     }`}
                                                                 >
-                                                                    {record.status ||
-                                                                        "N/A"}
+                                                                    {record.status === "no_time_in" ? "No Time In" : (record.status || "N/A")}
                                                                 </span>
                                                             </td>
                                                         </tr>

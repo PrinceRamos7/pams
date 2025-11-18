@@ -30,4 +30,12 @@ class Batch extends Model
     {
         return $this->hasMany(OfficerHistory::class, 'batch_id');
     }
+
+    /**
+     * Get the members for this batch
+     */
+    public function members()
+    {
+        return $this->hasMany(Member::class, 'batch_id', 'id');
+    }
 }

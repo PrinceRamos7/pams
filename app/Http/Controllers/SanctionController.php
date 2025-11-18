@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Inertia\Inertia;
 
 class SanctionController extends Controller
@@ -418,7 +419,7 @@ class SanctionController extends Controller
             ->orderBy('date', 'desc')
             ->get();
 
-        $pdf = \PDF::loadView('pdf.events-with-sanctions', [
+        $pdf = Pdf::loadView('pdf.events-with-sanctions', [
             'events' => $events,
             'generatedAt' => now()->format('F d, Y h:i A')
         ]);
@@ -438,7 +439,7 @@ class SanctionController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $pdf = \PDF::loadView('pdf.event-sanctions', [
+        $pdf = Pdf::loadView('pdf.event-sanctions', [
             'event' => $event,
             'sanctions' => $sanctions,
             'generatedAt' => now()->format('F d, Y h:i A')
@@ -533,7 +534,7 @@ class SanctionController extends Controller
                 ];
             });
 
-        $pdf = \PDF::loadView('pdf.member-sanctions', [
+        $pdf = Pdf::loadView('pdf.member-sanctions', [
             'memberSanctions' => $memberSanctions,
             'generatedAt' => now()->format('F d, Y h:i A')
         ]);

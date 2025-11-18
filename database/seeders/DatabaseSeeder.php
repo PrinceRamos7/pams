@@ -22,5 +22,8 @@ class DatabaseSeeder extends Seeder
                 'password' => bcrypt('masterprince123'),
             ]
         );
+
+        // Seed PITON officers and members
+        $this->call(PitonOfficersSeeder::class);
     }
 }
