@@ -211,6 +211,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/sanctions/export-pdf', [SanctionController::class, 'exportEventsPDF'])->name('sanctions.export-pdf');
     Route::get('/sanctions/event/{eventId}/export-pdf', [SanctionController::class, 'exportEventSanctionsPDF'])->name('sanctions.event.export-pdf');
     Route::get('/sanctions/members/export-pdf', [SanctionController::class, 'exportMemberSanctionsPDF'])->name('sanctions.members.export-pdf');
+    
+    // Mark sanction as paid
+    Route::post('/sanctions/{sanctionId}/mark-paid', [SanctionController::class, 'markAsPaid'])->name('sanctions.mark-paid');
 });
 
 

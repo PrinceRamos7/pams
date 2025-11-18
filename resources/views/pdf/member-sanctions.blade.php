@@ -96,7 +96,7 @@
     </table>
 
     <div class="footer">
-        <p>This is a computer-generated document. No signature is required.</p>
+        <p>Master Prince123@gmail.com.</p>
     </div>
 </body>
 </html>
