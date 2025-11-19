@@ -247,7 +247,18 @@ export default function MediaTeamTable({ mediaTeam }) {
                                     <label className="block text-sm font-medium mb-1">Status *</label>
                                     <select name="status" value={formData.status} onChange={handleChange} required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
                                         <option value="Active">Active</option>
-             
+                                        <option value="Inactive">Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-3 mt-6">
+                                <button type="button" onClick={closeEditModal} className="px-6 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+                                <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* Delete Modal */}
             {isDeleteModalOpen && selectedMember && (

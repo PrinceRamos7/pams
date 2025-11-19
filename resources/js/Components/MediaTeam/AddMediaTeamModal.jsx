@@ -3,7 +3,8 @@ import { X } from "lucide-react";
 import { router } from "@inertiajs/react";
 import toast from "react-hot-toast";
 
-export default function AddMediaTeamModal({ isOpen, onClose, batches }) {
+export default function AddMediaTeamModal({ isOpen, onClose, batches, availableMembers }) {
+    const [selectedMemberId, setSelectedMemberId] = useState("");
     const [formData, setFormData] = useState({
         student_id: "",
         firstname: "",
@@ -17,6 +18,44 @@ export default function AddMediaTeamModal({ isOpen, onClose, batches }) {
         address: "",
         batch_id: "",
     });
+
+    const handleMemberSelect = (e) => {
+        const memberId = e.target.value;
+        setSelectedMemberId(memberId);
+        
+        if (memberId) {
+            const member = availableMembers.find(m => m.member_id == memberId);
+            if (member) {
+                setFormData({
+                    student_id: member.student_id || "",
+                    firstname: member.firstname,
+                    lastname: member.lastname,
+                    sex: member.sex,
+                    role: "",
+                    specialization: "",
+                    year: member.year || "",
+                    email: member.email || "",
+                    phone_number: member.phone_number || "",
+                    address: member.address || "",
+                    batch_id: member.batch_id || "",
+                });
+            }
+        } else {
+            setFormData({
+                student_id: "",
+                firstname: "",
+                lastname: "",
+                sex: "",
+                role: "",
+                specialization: "",
+                year: "",
+                email: "",
+                phone_number: "",
+                address: "",
+                batch_id: "",
+            });
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -55,6 +94,23 @@ export default function AddMediaTeamModal({ isOpen, onClose, batches }) {
                     </button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6">
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium mb-1">Select Member *</label>
+                        <select
+                            value={selectedMemberId}
+                            onChange={handleMemberSelect}
+                            required
+                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                        >
+                            <option value="">-- Select a member --</option>
+                            {availableMembers?.map((member) => (
+                                <option key={member.member_id} value={member.member_id}>
+                                    {member.firstname} {member.lastname} {member.student_id ? `(${member.student_id})` : ''}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium mb-1">First Name *</label>
@@ -64,7 +120,8 @@ export default function AddMediaTeamModal({ isOpen, onClose, batches }) {
                                 value={formData.firstname}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                readOnly
+                                className="w-full px-3 py-2 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-purple-500"
                             />
                         </div>
                         <div>
@@ -75,7 +132,8 @@ export default function AddMediaTeamModal({ isOpen, onClose, batches }) {
                                 value={formData.lastname}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                readOnly
+                                className="w-full px-3 py-2 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-purple-500"
                             />
                         </div>
                         <div>
@@ -84,36 +142,83 @@ export default function AddMediaTeamModal({ isOpen, onClose, batches }) {
                                 type="text"
                                 name="student_id"
                                 value={formData.student_id}
-                                onChange={handleChange}
-                                placeholder="XX-XXXXX"
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                readOnly
+                                className="w-full px-3 py-2 border rounded-lg bg-gray-50"
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-1">Sex *</label>
-                            <select
+                            <input
+                                type="text"
                                 name="sex"
                                 value={formData.sex}
+                                readOnly
+                                className="w-full px-3 py-2 border rounded-lg bg-gray-50"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Year Level</label>
+                            <input
+                                type="text"
+                                name="year"
+                                value={formData.year}
+                                readOnly
+                                className="w-full px-3 py-2 border rounded-lg bg-gray-50"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Batch</label>
+                            <input
+                                type="text"
+                                value={batches?.find(b => b.id == formData.batch_id)?.year || ''}
+                                readOnly
+                                className="w-full px-3 py-2 border rounded-lg bg-gray-50"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Email</label>
+                            <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                readOnly
+                                className="w-full px-3 py-2 border rounded-lg bg-gray-50"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Phone Number</label>
+                            <input
+                                type="text"
+                                name="phone_number"
+                                value={formData.phone_number}
+                                readOnly
+                                className="w-full px-3 py-2 border rounded-lg bg-gray-50"
+                            />
+                        </div>
+                        <div className="col-span-2">
+                            <label className="block text-sm font-medium mb-1">Address</label>
+                            <textarea
+                                name="address"
+                                value={formData.address}
+                                readOnly
+                                rows="2"
+                                className="w-full px-3 py-2 border rounded-lg bg-gray-50"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Role *</label>
+                            <select
+                                name="role"
+                                value={formData.role}
                                 onChange={handleChange}
                                 required
                                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
                             >
-                                <option value="">Select</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                                <option value="Others">Others</option>
+                                <option value="">Select Role</option>
+                                <option value="Media Team Director">Media Team Director</option>
+                                <option value="Media Team Managing Director">Media Team Managing Director</option>
+                                <option value="Media Team Member">Media Team Member</option>
                             </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Role</label>
-                            <input
-                                type="text"
-                                name="role"
-                                value={formData.role}
-                                onChange={handleChange}
-                                placeholder="e.g., Director, Photographer"
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                            />
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-1">Specialization</label>
@@ -123,65 +228,6 @@ export default function AddMediaTeamModal({ isOpen, onClose, batches }) {
                                 value={formData.specialization}
                                 onChange={handleChange}
                                 placeholder="e.g., Photography, Videography"
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Year Level</label>
-                            <input
-                                type="text"
-                                name="year"
-                                value={formData.year}
-                                onChange={handleChange}
-                                placeholder="e.g., 3rd Year"
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Batch</label>
-                            <select
-                                name="batch_id"
-                                value={formData.batch_id}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                            >
-                                <option value="">Select Batch</option>
-                                {batches?.map((batch) => (
-                                    <option key={batch.id} value={batch.id}>
-                                        {batch.year}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Email</label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                placeholder="email@example.com"
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Phone Number</label>
-                            <input
-                                type="text"
-                                name="phone_number"
-                                value={formData.phone_number}
-                                onChange={handleChange}
-                                placeholder="09XXXXXXXXX"
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                            />
-                        </div>
-                        <div className="col-span-2">
-                            <label className="block text-sm font-medium mb-1">Address</label>
-                            <textarea
-                                name="address"
-                                value={formData.address}
-                                onChange={handleChange}
-                                rows="2"
                                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
                             />
                         </div>

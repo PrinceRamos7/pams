@@ -30,9 +30,27 @@ class MediaTeamController extends Controller
         $mediaTeam = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
         $batches = \App\Models\Batch::orderBy('year', 'desc')->get();
         
+        // Get current batch
+        $currentBatch = \App\Models\Batch::orderBy('year', 'desc')->first();
+        
+        // Get members who are not already in media team and from current batch
+        $existingMediaTeamStudentIds = MediaTeam::whereNotNull('student_id')->pluck('student_id')->toArray();
+        $existingMediaTeamEmails = MediaTeam::whereNotNull('email')->pluck('email')->toArray();
+        
+        $availableMembers = \App\Models\Member::where('status', 'Active')
+            ->where('batch_id', $currentBatch?->id)
+            ->where(function($q) use ($existingMediaTeamStudentIds, $existingMediaTeamEmails) {
+                $q->whereNotIn('student_id', $existingMediaTeamStudentIds)
+                  ->whereNotIn('email', $existingMediaTeamEmails);
+            })
+            ->orderBy('lastname')
+            ->orderBy('firstname')
+            ->get();
+        
         return Inertia::render('MediaTeam/MediaTeamList', [
             'mediaTeam' => $mediaTeam,
             'batches' => $batches,
+            'availableMembers' => $availableMembers,
             'filters' => $request->only(['search']),
         ]);
     }
@@ -53,30 +71,55 @@ class MediaTeamController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'student_id'   => ['nullable', 'unique:media_team,student_id', 'regex:/^\d{2}-\d{5}$/'],
+            'student_id'   => ['nullable', 'regex:/^\d{2}-\d{5}$/'],
             'firstname'    => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
             'lastname'     => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
             'sex'          => 'required|string|max:10',
-            'role'         => 'nullable|string|max:255',
+            'role'         => 'required|string|max:255',
             'specialization' => 'nullable|string|max:255',
             'age'          => 'nullable|integer',
             'birthdate'    => 'nullable|date',
-            'phone_number' => ['nullable', 'string', 'regex:/^09\d{9}$/', 'unique:media_team,phone_number'],
-            'email'        => 'nullable|email|unique:media_team,email',
+            'phone_number' => ['nullable', 'string', 'regex:/^09\d{9}$/'],
+            'email'        => 'nullable|email',
             'address'      => 'nullable|string|max:255',
             'year'         => 'nullable|string|max:50',
             'batch_id'     => 'nullable|exists:batches,id',
         ]);
 
+        // Check if this member is already in media team (by student_id or email)
+        $existingMember = MediaTeam::where(function($q) use ($validated) {
+            if (!empty($validated['student_id'])) {
+                $q->where('student_id', $validated['student_id']);
+            }
+            if (!empty($validated['email'])) {
+                $q->orWhere('email', $validated['email']);
+            }
+        })->first();
+
+        if ($existingMember) {
+            return back()->withErrors([
+                'member' => "This member is already in the media team: {$existingMember->firstname} {$existingMember->lastname}"
+            ]);
+        }
+
+        // Check if Director or Managing Director role already exists
+        if (in_array($validated['role'], ['Media Team Director', 'Media Team Managing Director'])) {
+            $existingRole = MediaTeam::where('role', $validated['role'])
+                ->where('status', 'Active')
+                ->first();
+            
+            if ($existingRole) {
+                return back()->withErrors([
+                    'role' => "A {$validated['role']} already exists: {$existingRole->firstname} {$existingRole->lastname}"
+                ]);
+            }
+        }
+
         $validated['status'] = 'Active';
 
-        $mediaTeamMember = MediaTeam::create($validated);
+        MediaTeam::create($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Media team member added successfully!',
-            'data' => $mediaTeamMember
-        ]);
+        return redirect()->route('media-team.index');
     }
 
     public function update(Request $request, $id)
@@ -84,29 +127,39 @@ class MediaTeamController extends Controller
         $mediaTeamMember = MediaTeam::findOrFail($id);
         
         $validated = $request->validate([
-            'student_id'   => ['nullable', 'regex:/^\d{2}-\d{5}$/', 'unique:media_team,student_id,' . $id . ',media_team_id'],
+            'student_id'   => ['nullable', 'regex:/^\d{2}-\d{5}$/'],
             'firstname'    => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
             'lastname'     => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
             'sex'          => 'required|string|max:10',
-            'role'         => 'nullable|string|max:255',
+            'role'         => 'required|string|max:255',
             'specialization' => 'nullable|string|max:255',
             'age'          => 'nullable|integer',
             'birthdate'    => 'nullable|date',
-            'phone_number' => ['nullable', 'regex:/^09\d{9}$/', 'unique:media_team,phone_number,' . $id . ',media_team_id'],
-            'email'        => ['nullable', 'email', 'unique:media_team,email,' . $id . ',media_team_id'],
+            'phone_number' => ['nullable', 'regex:/^09\d{9}$/'],
+            'email'        => ['nullable', 'email'],
             'address'      => 'nullable|string|max:255',
             'year'         => 'nullable|string|max:50',
             'status'       => 'required|in:Active,Inactive,Alumni',
             'batch_id'     => 'nullable|exists:batches,id',
         ]);
 
+        // Check if Director or Managing Director role already exists (excluding current member)
+        if (in_array($validated['role'], ['Media Team Director', 'Media Team Managing Director'])) {
+            $existingRole = MediaTeam::where('role', $validated['role'])
+                ->where('status', 'Active')
+                ->where('media_team_id', '!=', $id)
+                ->first();
+            
+            if ($existingRole) {
+                return back()->withErrors([
+                    'role' => "A {$validated['role']} already exists: {$existingRole->firstname} {$existingRole->lastname}"
+                ]);
+            }
+        }
+
         $mediaTeamMember->update($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Media team member updated successfully!',
-            'data' => $mediaTeamMember
-        ]);
+        return redirect()->route('media-team.index');
     }
 
     public function destroy($id)
@@ -114,10 +167,7 @@ class MediaTeamController extends Controller
         $mediaTeamMember = MediaTeam::findOrFail($id);
         $mediaTeamMember->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Media team member deleted successfully!'
-        ]);
+        return redirect()->route('media-team.index');
     }
 
     public function uploadProfilePicture(Request $request, $id)
@@ -157,9 +207,9 @@ class MediaTeamController extends Controller
             'members.*.sex' => 'required|in:Male,Female,Others',
             'members.*.role' => 'nullable|string|max:255',
             'members.*.specialization' => 'nullable|string|max:255',
-            'members.*.student_id' => ['nullable', 'string', 'regex:/^\d{2}-\d{5}$/', 'unique:media_team,student_id'],
-            'members.*.email' => 'nullable|email|unique:media_team,email',
-            'members.*.phone_number' => ['nullable', 'regex:/^09\d{9}$/', 'unique:media_team,phone_number'],
+            'members.*.student_id' => ['nullable', 'string', 'regex:/^\d{2}-\d{5}$/'],
+            'members.*.email' => 'nullable|email',
+            'members.*.phone_number' => ['nullable', 'regex:/^09\d{9}$/'],
             'members.*.year' => 'nullable|string',
             'members.*.batch_id' => 'nullable|exists:batches,id',
         ]);
@@ -170,13 +220,20 @@ class MediaTeamController extends Controller
 
         foreach ($request->members as $index => $memberData) {
             try {
-                if (!empty($memberData['student_id'])) {
-                    $exists = MediaTeam::where('student_id', $memberData['student_id'])->exists();
-                    if ($exists) {
-                        $failedCount++;
-                        $errors[] = "Row " . ($index + 1) . ": Student ID {$memberData['student_id']} already exists";
-                        continue;
+                // Check if member already exists in media team
+                $exists = MediaTeam::where(function($q) use ($memberData) {
+                    if (!empty($memberData['student_id'])) {
+                        $q->where('student_id', $memberData['student_id']);
                     }
+                    if (!empty($memberData['email'])) {
+                        $q->orWhere('email', $memberData['email']);
+                    }
+                })->exists();
+
+                if ($exists) {
+                    $failedCount++;
+                    $errors[] = "Row " . ($index + 1) . ": Member already exists in media team";
+                    continue;
                 }
 
                 $email = $memberData['email'] ?? null;

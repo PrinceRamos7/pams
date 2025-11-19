@@ -15,7 +15,7 @@ import AddMediaTeamModal from "../../components/MediaTeam/AddMediaTeamModal";
 import BulkAddMediaTeamModal from "../../components/MediaTeam/BulkAddMediaTeamModal";
 import Pagination from "../../components/Pagination";
 
-export default function MediaTeamList({ mediaTeam, batches, filters }) {
+export default function MediaTeamList({ mediaTeam, batches, availableMembers, filters }) {
     const [searchQuery, setSearchQuery] = useState(filters?.search || "");
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
@@ -124,6 +124,7 @@ export default function MediaTeamList({ mediaTeam, batches, filters }) {
                     isOpen={isAddModalOpen}
                     onClose={() => setIsAddModalOpen(false)}
                     batches={batches}
+                    availableMembers={availableMembers}
                 />
             )}
 
