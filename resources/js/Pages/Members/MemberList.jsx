@@ -29,6 +29,7 @@ export default function MemberList({ members: paginatedMembers, batches, filters
     const [searchTerm, setSearchTerm] = useState(filters?.search || '');
     const [showBulkAddModal, setShowBulkAddModal] = useState(false);
     const [yearFilter, setYearFilter] = useState(filters?.year || 'all');
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     // Flash messages
     useEffect(() => {
@@ -38,6 +39,12 @@ export default function MemberList({ members: paginatedMembers, batches, filters
 
     // Server-side search with debounce
     useEffect(() => {
+        // Skip the initial load to prevent double request
+        if (isInitialLoad) {
+            setIsInitialLoad(false);
+            return;
+        }
+
         const delayDebounceFn = setTimeout(() => {
             router.get(route('members.index'), 
                 { 

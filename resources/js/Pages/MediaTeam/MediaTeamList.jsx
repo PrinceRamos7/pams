@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Head, router } from "@inertiajs/react";
 import { Toaster } from "react-hot-toast";
-import { Search, UserPlus, Users, Download } from "lucide-react";
+import { Search, UserPlus, Download } from "lucide-react";
 import {
     SidebarProvider,
     SidebarInset,
@@ -12,13 +12,12 @@ import { Separator } from "../../components/ui/separator";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import MediaTeamTable from "../../components/MediaTeam/MediaTeamTable";
 import AddMediaTeamModal from "../../components/MediaTeam/AddMediaTeamModal";
-import BulkAddMediaTeamModal from "../../components/MediaTeam/BulkAddMediaTeamModal";
+
 import Pagination from "../../components/Pagination";
 
-export default function MediaTeamList({ mediaTeam, batches, availableMembers, filters }) {
+export default function MediaTeamList({ mediaTeam, batches, availableMembers, hasDirector, hasManagingDirector, filters }) {
     const [searchQuery, setSearchQuery] = useState(filters?.search || "");
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
     const breadcrumbs = [
         { href: "/dashboard", label: "Dashboard" },
@@ -57,18 +56,17 @@ export default function MediaTeamList({ mediaTeam, batches, availableMembers, fi
                                 <h1 className="text-2xl font-bold text-gray-900">Media Team Management</h1>
                                 <div className="flex gap-3">
                                     <button
-                                        onClick={() => setIsAddModalOpen(true)}
-                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                        onClick={() => router.visit('/media-team/chart')}
+                                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                                     >
-                                        <UserPlus size={20} />
-                                        Add Member
+                                        Media Team Chart
                                     </button>
                                     <button
-                                        onClick={() => setIsBulkModalOpen(true)}
-                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                        onClick={() => setIsAddModalOpen(true)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                                     >
-                                        <Users size={20} />
-                                        Bulk Add
+                                        <UserPlus size={20} />
+                                        Add Members
                                     </button>
                                 </div>
                             </div>
@@ -125,14 +123,8 @@ export default function MediaTeamList({ mediaTeam, batches, availableMembers, fi
                     onClose={() => setIsAddModalOpen(false)}
                     batches={batches}
                     availableMembers={availableMembers}
-                />
-            )}
-
-            {isBulkModalOpen && (
-                <BulkAddMediaTeamModal
-                    isOpen={isBulkModalOpen}
-                    onClose={() => setIsBulkModalOpen(false)}
-                    batches={batches}
+                    hasDirector={hasDirector}
+                    hasManagingDirector={hasManagingDirector}
                 />
             )}
         </SidebarProvider>

@@ -63,6 +63,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/media-team', [App\Http\Controllers\MediaTeamController::class, 'index'])->name('media-team.index');
     Route::get('/media-team/chart', [App\Http\Controllers\MediaTeamController::class, 'chart'])->name('media-team.chart');
     Route::post('/media-team', [App\Http\Controllers\MediaTeamController::class, 'store'])->name('media-team.store');
+    Route::post('/media-team/bulk-add', [App\Http\Controllers\MediaTeamController::class, 'bulkAdd'])->name('media-team.bulk-add');
     Route::post('/media-team/bulk-import', [App\Http\Controllers\MediaTeamController::class, 'bulkImport'])->name('media-team.bulk-import');
     Route::put('/media-team/{id}', [App\Http\Controllers\MediaTeamController::class, 'update'])->name('media-team.update');
     Route::delete('/media-team/{id}', [App\Http\Controllers\MediaTeamController::class, 'destroy'])->name('media-team.destroy');

@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Seed PITON officers and members
-        $this->call(PitonOfficersSeeder::class);
+        // Seed PITON members and officers for AY 2025-2026
+        $this->call(PitonMembersAndOfficersAY2025_2026Seeder::class);
     }
 }

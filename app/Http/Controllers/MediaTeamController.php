@@ -47,10 +47,21 @@ class MediaTeamController extends Controller
             ->orderBy('firstname')
             ->get();
         
+        // Check which leadership roles are already taken
+        $hasDirector = MediaTeam::where('role', 'Media Team Director')
+            ->where('status', 'Active')
+            ->exists();
+        
+        $hasManagingDirector = MediaTeam::where('role', 'Media Team Managing Director')
+            ->where('status', 'Active')
+            ->exists();
+        
         return Inertia::render('MediaTeam/MediaTeamList', [
             'mediaTeam' => $mediaTeam,
             'batches' => $batches,
             'availableMembers' => $availableMembers,
+            'hasDirector' => $hasDirector,
+            'hasManagingDirector' => $hasManagingDirector,
             'filters' => $request->only(['search']),
         ]);
     }
@@ -173,29 +184,115 @@ class MediaTeamController extends Controller
     public function uploadProfilePicture(Request $request, $id)
     {
         $request->validate([
-            'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:51200', // 50MB max
         ]);
 
         $mediaTeamMember = MediaTeam::findOrFail($id);
 
         if ($request->hasFile('profile_picture')) {
+            // Create directory if it doesn't exist
+            $uploadPath = public_path('uploads/media_team');
+            if (!file_exists($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+
             $file = $request->file('profile_picture');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('uploads/media_team'), $filename);
+            $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
+            $file->move($uploadPath, $filename);
             
-            if ($mediaTeamMember->profile_picture && file_exists(public_path($mediaTeamMember->profile_picture))) {
-                unlink(public_path($mediaTeamMember->profile_picture));
+            // Delete old picture if exists
+            if ($mediaTeamMember->profile_picture) {
+                $oldPath = public_path(ltrim($mediaTeamMember->profile_picture, '/'));
+                if (file_exists($oldPath)) {
+                    unlink($oldPath);
+                }
             }
             
-            $mediaTeamMember->profile_picture = 'uploads/media_team/' . $filename;
+            $mediaTeamMember->profile_picture = '/uploads/media_team/' . $filename;
             $mediaTeamMember->save();
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Profile picture uploaded successfully!',
-            'profile_picture' => $mediaTeamMember->profile_picture
+        return back();
+    }
+
+    public function bulkAdd(Request $request)
+    {
+        $request->validate([
+            'members' => 'required|array|min:1',
+            'members.*.firstname' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
+            'members.*.lastname' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/'],
+            'members.*.sex' => 'required|in:Male,Female,Others',
+            'members.*.role' => 'required|string|max:255',
+            'members.*.specialization' => 'nullable|string|max:255',
+            'members.*.student_id' => ['nullable', 'string', 'regex:/^\d{2}-\d{5}$/'],
+            'members.*.email' => 'nullable|email',
+            'members.*.phone_number' => ['nullable', 'regex:/^09\d{9}$/'],
+            'members.*.year' => 'nullable|string',
+            'members.*.batch_id' => 'nullable|exists:batches,id',
         ]);
+
+        $successCount = 0;
+        $failedCount = 0;
+        $errors = [];
+
+        foreach ($request->members as $index => $memberData) {
+            try {
+                // Check if member already exists in media team
+                $exists = MediaTeam::where(function($q) use ($memberData) {
+                    if (!empty($memberData['student_id'])) {
+                        $q->where('student_id', $memberData['student_id']);
+                    }
+                    if (!empty($memberData['email'])) {
+                        $q->orWhere('email', $memberData['email']);
+                    }
+                })->exists();
+
+                if ($exists) {
+                    $failedCount++;
+                    $errors[] = "Member " . ($index + 1) . ": Already exists in media team";
+                    continue;
+                }
+
+                // Check if Director or Managing Director role already exists
+                if (in_array($memberData['role'], ['Media Team Director', 'Media Team Managing Director'])) {
+                    $existingRole = MediaTeam::where('role', $memberData['role'])
+                        ->where('status', 'Active')
+                        ->first();
+                    
+                    if ($existingRole) {
+                        $failedCount++;
+                        $errors[] = "Member " . ($index + 1) . ": {$memberData['role']} already exists";
+                        continue;
+                    }
+                }
+
+                MediaTeam::create([
+                    'student_id' => $memberData['student_id'] ?? null,
+                    'firstname' => $memberData['firstname'],
+                    'lastname' => $memberData['lastname'],
+                    'sex' => $memberData['sex'],
+                    'role' => $memberData['role'],
+                    'specialization' => $memberData['specialization'] ?? null,
+                    'year' => $memberData['year'] ?? null,
+                    'batch_id' => $memberData['batch_id'] ?? null,
+                    'email' => $memberData['email'] ?? null,
+                    'phone_number' => $memberData['phone_number'] ?? null,
+                    'address' => $memberData['address'] ?? null,
+                    'status' => 'Active',
+                ]);
+
+                $successCount++;
+            } catch (\Exception $e) {
+                $failedCount++;
+                $errors[] = "Member " . ($index + 1) . ": " . $e->getMessage();
+            }
+        }
+
+        if ($failedCount > 0) {
+            return back()->withErrors(['bulk' => implode(', ', $errors)]);
+        }
+
+        return redirect()->route('media-team.index');
     }
 
     public function bulkImport(Request $request)
