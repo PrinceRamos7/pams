@@ -66,7 +66,7 @@ export function AppSidebar({ ...props }) {
                         title: "Member Archive",
                         url: "/members/history/list",
                     },
-                  
+
                     {
                         title: "Officers",
                         url: "/officers",
@@ -74,6 +74,10 @@ export function AppSidebar({ ...props }) {
                     {
                         title: "Officers History",
                         url: "/officers/history",
+                    },
+                    {
+                        title: "Media Team",
+                        url: "/media-team",
                     },
                 ],
             },
