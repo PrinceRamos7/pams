@@ -224,6 +224,24 @@ class OfficerController extends Controller
         ]);
     }
 
+    // Delete historical officer
+    public function destroyHistory($id)
+    {
+        try {
+            $officerHistory = \App\Models\OfficerHistory::findOrFail($id);
+            $officerHistory->delete();
+            
+            return redirect()->back()->with([
+                'success' => 'Officer history record deleted successfully!'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Delete officer history error: ' . $e->getMessage());
+            return redirect()->back()->with([
+                'error' => 'Failed to delete officer history record.'
+            ]);
+        }
+    }
+
     // Export Officers List to PDF
     public function exportPDF()
     {
@@ -414,6 +432,7 @@ class OfficerController extends Controller
                         'created_at' => $officer->created_at,
                         'end_date' => null,
                         'status' => 'Active',
+                        'is_history' => false,
                     ]);
                 }
 
@@ -467,6 +486,7 @@ class OfficerController extends Controller
                 'created_at' => $officer->created_at,
                 'end_date' => null,
                 'status' => 'Active',
+                'is_history' => false,
             ]);
         }
 
@@ -497,6 +517,7 @@ class OfficerController extends Controller
                 'created_at' => $history->start_date ?? $history->created_at,
                 'end_date' => $history->end_date,
                 'status' => $history->status ?? 'Alumni',
+                'is_history' => true,
             ]);
         }
 
@@ -560,7 +581,8 @@ class OfficerController extends Controller
     {
         try {
             $request->validate([
-                'batch_name' => 'required|string|max:255',
+                'batch_id' => 'nullable|exists:batches,id',
+                'batch_name' => 'nullable|string|max:255',
                 'officers' => 'required|array|min:1',
                 'officers.*.position' => 'required|string|max:255',
                 'officers.*.member_name' => 'required|string|max:255',
@@ -569,14 +591,26 @@ class OfficerController extends Controller
                 'officers.*.status' => 'required|string',
             ]);
 
-            $batchName = $request->input('batch_name');
             $officersData = $request->input('officers');
+            $batchId = $request->input('batch_id');
+            $batchName = $request->input('batch_name');
 
-            // Create new batch
-            $batch = \App\Models\Batch::create([
-                'name' => $batchName,
-                'year' => date('Y'),
-            ]);
+            // Determine batch to use
+            if ($batchId) {
+                // Use existing batch
+                $batch = \App\Models\Batch::findOrFail($batchId);
+            } elseif ($batchName) {
+                // Create new batch
+                $batch = \App\Models\Batch::create([
+                    'name' => $batchName,
+                    'year' => date('Y'),
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Either batch_id or batch_name must be provided'
+                ], 400);
+            }
 
             $addedCount = 0;
             $errors = [];
@@ -611,7 +645,7 @@ class OfficerController extends Controller
             }
 
             if ($addedCount > 0) {
-                $message = "$addedCount officer(s) added to batch '{$batchName}' successfully.";
+                $message = "$addedCount officer(s) added to batch '{$batch->name}' successfully.";
                 if (count($errors) > 0) {
                     $message .= " " . count($errors) . " officer(s) could not be added.";
                 }

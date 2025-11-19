@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { router } from "@inertiajs/react";
 
-export default function EditOfficerModal({ officer, closeModal, showNotificationModal, existingOfficers = [] }) {
+export default function EditOfficerModal({ officer, closeModal, showNotificationToast, existingOfficers = [] }) {
     const [members, setMembers] = useState([]);
     const [formData, setFormData] = useState({
         member_id: officer.member_id || "",
@@ -51,7 +51,7 @@ export default function EditOfficerModal({ officer, closeModal, showNotification
 
     const handleSubmit = () => {
         if (!formData.member_id) {
-            showNotificationModal("Validation Error", "Please select a member.", "error");
+            showNotificationToast("Please select a member.", "error");
             return;
         }
 
@@ -60,14 +60,14 @@ export default function EditOfficerModal({ officer, closeModal, showNotification
             onSuccess: () => {
                 closeModal();
                 setTimeout(() => {
-                    showNotificationModal("Success!", "Officer updated successfully!", "success");
+                    showNotificationToast("Officer updated successfully!", "success");
                 }, 100);
             },
             onError: (errors) => {
                 closeModal();
                 setTimeout(() => {
                     const errorMessage = errors.member_id || "Failed to update officer. Please try again.";
-                    showNotificationModal("Error!", errorMessage, "error");
+                    showNotificationToast(errorMessage, "error");
                 }, 100);
             },
         });

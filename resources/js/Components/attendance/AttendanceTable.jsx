@@ -284,6 +284,8 @@ export default function AttendanceTable() {
             if (data.success) {
                 // Update the event in the list
                 setEvents((prev) => prev.map(e => e.event_id === event.event_id ? data.event : e));
+                // Force update current time to trigger re-render
+                setCurrentTime(new Date());
                 showNotificationModal("Success!", data.message, "success");
             } else {
                 showNotificationModal("Error!", data.message || "Failed to open time-out window.", "error");
@@ -326,6 +328,8 @@ export default function AttendanceTable() {
             if (data.success) {
                 // Update the event in the list
                 setEvents((prev) => prev.map(e => e.event_id === event.event_id ? data.event : e));
+                // Force update current time to trigger re-render
+                setCurrentTime(new Date());
                 showNotificationModal("Success!", data.message, "success");
             } else {
                 showNotificationModal("Error!", data.message || "Failed to reopen time-out window.", "error");
@@ -391,14 +395,16 @@ export default function AttendanceTable() {
         // Parse the event date and time
         const eventDateTime = new Date(event.date + 'T' + event.time_in);
         
-        // Calculate end time (15 minutes after start)
-        const endTime = new Date(eventDateTime.getTime() + 15 * 60000);
+        // Use time_in_duration from event, default to 30 minutes if not set
+        const duration = event.time_in_duration || 30;
+        const endTime = new Date(eventDateTime.getTime() + duration * 60000);
         
         // For debugging - log the times
         console.log('Time In Check:', {
             now: now.toLocaleString(),
             eventStart: eventDateTime.toLocaleString(),
             eventEnd: endTime.toLocaleString(),
+            duration: duration + ' minutes',
             isActive: now >= eventDateTime && now <= endTime,
             status: event.status
         });
@@ -421,14 +427,16 @@ export default function AttendanceTable() {
         // Parse the event date and time
         const eventDateTime = new Date(event.date + 'T' + event.time_out);
         
-        // Calculate end time (15 minutes after start)
-        const endTime = new Date(eventDateTime.getTime() + 15 * 60000);
+        // Use time_out_duration from event, default to 30 minutes if not set
+        const duration = event.time_out_duration || 30;
+        const endTime = new Date(eventDateTime.getTime() + duration * 60000);
         
         // For debugging - log the times
         console.log('Time Out Check:', {
             now: now.toLocaleString(),
             eventStart: eventDateTime.toLocaleString(),
             eventEnd: endTime.toLocaleString(),
+            duration: duration + ' minutes',
             isActive: now >= eventDateTime && now <= endTime,
             status: event.status
         });
@@ -457,7 +465,8 @@ export default function AttendanceTable() {
         
         const now = new Date();
         const timeOutDateTime = new Date(event.date + 'T' + event.time_out);
-        const timeOutEndTime = new Date(timeOutDateTime.getTime() + 15 * 60000);
+        const duration = event.time_out_duration || 30;
+        const timeOutEndTime = new Date(timeOutDateTime.getTime() + duration * 60000);
         
         // Return true if current time is past the time-out end time
         return now > timeOutEndTime && !testMode;
@@ -823,11 +832,11 @@ export default function AttendanceTable() {
                                                     <button
                                                         onClick={() => handleForceBeginTimeOut(event)}
                                                         className={`w-full text-left px-4 py-2 flex items-center gap-3 ${
-                                                            event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event) || isTimeOver(event)
+                                                            event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event)
                                                                 ? 'opacity-50 cursor-not-allowed text-gray-400' 
                                                                 : 'hover:bg-blue-50 text-blue-600'
                                                         }`}
-                                                        disabled={event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event) || isTimeOver(event)}
+                                                        disabled={event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event)}
                                                     >
                                                         <Clock size={16} />
                                                         Force Begin Time Out
@@ -836,11 +845,11 @@ export default function AttendanceTable() {
                                                     <button
                                                         onClick={() => handleForceReopenTimeOut(event)}
                                                         className={`w-full text-left px-4 py-2 flex items-center gap-3 ${
-                                                            event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event) || !hasTimeOutStarted(event)
+                                                            event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event)
                                                                 ? 'opacity-50 cursor-not-allowed text-gray-400' 
                                                                 : 'hover:bg-purple-50 text-purple-600'
                                                         }`}
-                                                        disabled={event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event) || !hasTimeOutStarted(event)}
+                                                        disabled={event.status === 'closed' || isTimeOutActive(event) || !hasTimeInStarted(event)}
                                                     >
                                                         <Clock size={16} />
                                                         Force Reopen Time Out
@@ -849,11 +858,11 @@ export default function AttendanceTable() {
                                                                     <button
                                                         onClick={() => handleForceClose(event)}
                                                         className={`w-full text-left px-4 py-2 flex items-center gap-3 ${
-                                                            event.status === 'closed' || !hasTimeInStarted(event) || isTimeOver(event)
+                                                            event.status === 'closed' || !hasTimeInStarted(event)
                                                                 ? 'opacity-50 cursor-not-allowed text-gray-400'
                                                                 : 'hover:bg-orange-50 text-orange-600'
                                                         }`}
-                                                        disabled={event.status === 'closed' || !hasTimeInStarted(event) || isTimeOver(event)}
+                                                        disabled={event.status === 'closed' || !hasTimeInStarted(event)}
                                                     >
                                                         <Clock size={16} />
                                                         Force Close & Calculate

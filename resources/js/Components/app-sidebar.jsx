@@ -63,13 +63,10 @@ export function AppSidebar({ ...props }) {
                         url: "/members",
                     },
                     {
-                        title: "Member History",
+                        title: "Member Archive",
                         url: "/members/history/list",
                     },
-                    {
-                        title: "Member Chart",
-                        url: "/members/chart",
-                    },
+                  
                     {
                         title: "Officers",
                         url: "/officers",

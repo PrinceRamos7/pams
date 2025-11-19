@@ -44,15 +44,19 @@ class MemberHistoryController extends Controller
             $batchCurrentOfficers = $currentOfficers->get($batch->id, collect());
             
             // Combine regular members with officers from history
-            $allMembers = $batch->members->map(function ($member) {
+            $allMembers = $batch->members->map(function ($member) use ($batch) {
                     $position = $member->officer ? $member->officer->position : 'Member';
                     
                     return [
                         'member_id' => $member->member_id,
                         'student_id' => $member->student_id,
                         'name' => $member->firstname . ' ' . $member->lastname,
+                        'firstname' => $member->firstname,
+                        'lastname' => $member->lastname,
+                        'sex' => $member->sex,
                         'year' => $member->year,
                         'status' => $member->status,
+                        'batch_id' => $batch->id,
                         'position' => $position,
                         'is_officer' => $member->officer ? true : false,
                         'officer_position' => $member->officer ? $member->officer->position : null,
@@ -209,8 +213,12 @@ class MemberHistoryController extends Controller
                     'member_id' => $member->member_id,
                     'student_id' => $member->student_id,
                     'name' => $member->firstname . ' ' . $member->lastname,
+                    'firstname' => $member->firstname,
+                    'lastname' => $member->lastname,
+                    'sex' => $member->sex,
                     'year' => $member->year,
                     'status' => $member->status,
+                    'batch_id' => $member->batch_id,
                     'position' => $position,
                     'is_officer' => $member->officer ? true : false,
                     'officer_position' => $member->officer ? $member->officer->position : null,

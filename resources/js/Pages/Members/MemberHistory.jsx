@@ -6,7 +6,7 @@ import { AppSidebar } from "../../components/app-sidebar";
 import { Separator } from "../../components/ui/separator";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { FileText, Search, Plus, Upload } from "lucide-react";
+import { FileText, Search, Upload } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import MemberHistoryComponent from "../../components/Members/MemberHistory";
@@ -15,16 +15,15 @@ import BulkAddMemberModal from "../../components/members/BulkAddMemberModal";
 
 export default function MemberHistoryPage({ batches }) {
     const [searchTerm, setSearchTerm] = useState("");
-    const [showAddMemberModal, setShowAddMemberModal] = useState(false);
     const [showBulkAddModal, setShowBulkAddModal] = useState(false);
     const [showEditMemberModal, setShowEditMemberModal] = useState(false);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [selectedMember, setSelectedMember] = useState(null);
     const [formData, setFormData] = useState({
         student_id: "",
         firstname: "",
         lastname: "",
         sex: "",
+        birthdate: "",
         batch_id: "",
         status: "Active",
     });
@@ -48,10 +47,6 @@ export default function MemberHistoryPage({ batches }) {
         window.location.href = route('members.history.export-pdf');
     };
 
-    const handleAddMember = () => {
-        setShowAddMemberModal(true);
-    };
-
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -60,77 +55,79 @@ export default function MemberHistoryPage({ batches }) {
         }));
     };
 
-    const handleAddSubmit = async (e) => {
-        e.preventDefault();
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-        try {
-            const response = await fetch('/members', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                body: JSON.stringify(formData),
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                toast.success('Member added successfully!');
-                setShowAddMemberModal(false);
-                setFormData({
-                    student_id: "",
-                    firstname: "",
-                    lastname: "",
-                    sex: "",
-                    batch_id: "",
-                    status: "Active",
-                });
-                setTimeout(() => {
-                    router.reload();
-                }, 1000);
-            } else {
-                toast.error(data.message || 'Failed to add member');
-            }
-        } catch (error) {
-            console.error('Error adding member:', error);
-            toast.error('Failed to add member. Please try again.');
-        }
-    };
-
-    const closeAddModal = () => {
-        setShowAddMemberModal(false);
-        setFormData({
-            student_id: "",
-            firstname: "",
-            lastname: "",
-            sex: "",
-            batch_id: "",
-            status: "Active",
-        });
-    };
-
     const handleEditMember = (member) => {
-        setSelectedMember(member);
-        setFormData({
-            student_id: member.student_id,
-            firstname: member.firstname,
-            lastname: member.lastname,
-            sex: member.sex,
-            batch_id: member.batch_id,
-            status: member.status,
+        console.log('Edit member data:', member); // Debug log
+        
+        // If firstname/lastname are not available, split the name
+        let firstname = member.firstname || '';
+        let lastname = member.lastname || '';
+        
+        if (!firstname && !lastname && member.name) {
+            const nameParts = member.name.split(' ');
+            firstname = nameParts[0] || '';
+            lastname = nameParts.slice(1).join(' ') || '';
+        }
+        
+        setSelectedMember({
+            ...member,
+            id: member.member_id, // Use member_id as id for the API call
+            firstname,
+            lastname,
         });
+        
+        setFormData({
+            student_id: member.student_id || '',
+            firstname: firstname,
+            lastname: lastname,
+            sex: member.sex || '',
+            birthdate: member.birthdate || '',
+            batch_id: member.batch_id || '',
+            status: member.status || 'Active',
+        });
+        
+        console.log('Form data set:', {
+            student_id: member.student_id || '',
+            firstname: firstname,
+            lastname: lastname,
+            sex: member.sex || '',
+            birthdate: member.birthdate || '',
+            batch_id: member.batch_id || '',
+            status: member.status || 'Active',
+        }); // Debug log
+        
         setShowEditMemberModal(true);
     };
 
     const handleEditSubmit = async (e) => {
         e.preventDefault();
+        
+        // Check if member can be edited (only members from 'member' source)
+        if (selectedMember.source !== 'member') {
+            toast.error('Cannot edit this record. This is a historical officer record.', {
+                duration: 4000,
+                position: 'top-right',
+            });
+            return;
+        }
+        
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
+        const loadingToast = toast.loading('Updating member...', {
+            position: 'top-right',
+        });
+
         try {
-            const response = await fetch(`/members/${selectedMember.id}`, {
+            // Use member_id instead of id
+            const memberId = selectedMember.member_id || selectedMember.id;
+            
+            console.log('Updating member with ID:', memberId);
+            console.log('Selected member:', selectedMember);
+            
+            if (!memberId) {
+                throw new Error('Member ID is missing');
+            }
+            
+            const response = await fetch(`/members/${memberId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -142,8 +139,13 @@ export default function MemberHistoryPage({ batches }) {
 
             const data = await response.json();
 
+            toast.dismiss(loadingToast);
+
             if (data.success) {
-                toast.success('Member updated successfully!');
+                toast.success('Member updated successfully!', {
+                    duration: 3000,
+                    position: 'top-right',
+                });
                 setShowEditMemberModal(false);
                 setSelectedMember(null);
                 setFormData({
@@ -151,18 +153,26 @@ export default function MemberHistoryPage({ batches }) {
                     firstname: "",
                     lastname: "",
                     sex: "",
+                    birthdate: "",
                     batch_id: "",
                     status: "Active",
                 });
                 setTimeout(() => {
-                    router.reload();
+                    router.visit(route('members.history'), { method: 'get' });
                 }, 1000);
             } else {
-                toast.error(data.message || 'Failed to update member');
+                toast.error(data.message || 'Failed to update member', {
+                    duration: 4000,
+                    position: 'top-right',
+                });
             }
         } catch (error) {
             console.error('Error updating member:', error);
-            toast.error('Failed to update member. Please try again.');
+            toast.dismiss(loadingToast);
+            toast.error(error.message || 'Failed to update member. Please try again.', {
+                duration: 4000,
+                position: 'top-right',
+            });
         }
     };
 
@@ -174,21 +184,77 @@ export default function MemberHistoryPage({ batches }) {
             firstname: "",
             lastname: "",
             sex: "",
+            birthdate: "",
             batch_id: "",
             status: "Active",
         });
     };
 
     const handleDeleteMember = (member) => {
-        setSelectedMember(member);
-        setShowDeleteConfirm(true);
+        // Show confirmation toast with action buttons
+        toast((t) => (
+            <div className="flex flex-col gap-3">
+                <div className="text-center">
+                    <p className="font-semibold text-gray-900">Delete Member?</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                        Are you sure you want to delete <strong>{member.firstname || member.name}</strong>?
+                    </p>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => {
+                            toast.dismiss(t.id);
+                            confirmDelete(member);
+                        }}
+                        className="flex-1 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition"
+                    >
+                        Delete
+                    </button>
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300 transition"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: 10000,
+            position: 'top-right',
+            style: {
+                minWidth: '350px',
+            },
+        });
     };
 
-    const confirmDelete = async () => {
+    const confirmDelete = async (member) => {
+        // Check if member can be deleted (only members from 'member' source)
+        if (member.source !== 'member') {
+            toast.error('Cannot delete this record. This is a historical officer record.', {
+                duration: 4000,
+                position: 'top-right',
+            });
+            return;
+        }
+        
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        
+        const loadingToast = toast.loading('Deleting member...', {
+            position: 'top-right',
+        });
 
         try {
-            const response = await fetch(`/members/${selectedMember.id}`, {
+            // Use member_id instead of id
+            const memberId = member.member_id || member.id;
+            
+            console.log('Deleting member with ID:', memberId);
+            console.log('Member data:', member);
+            
+            if (!memberId) {
+                throw new Error('Member ID is missing');
+            }
+            
+            const response = await fetch(`/members/${memberId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -199,25 +265,30 @@ export default function MemberHistoryPage({ batches }) {
 
             const data = await response.json();
 
+            toast.dismiss(loadingToast);
+
             if (data.success) {
-                toast.success('Member deleted successfully!');
-                setShowDeleteConfirm(false);
-                setSelectedMember(null);
+                toast.success('Member deleted successfully!', {
+                    duration: 3000,
+                    position: 'top-right',
+                });
                 setTimeout(() => {
-                    router.reload();
+                    router.visit(route('members.history'), { method: 'get' });
                 }, 1000);
             } else {
-                toast.error(data.message || 'Failed to delete member');
+                toast.error(data.message || 'Failed to delete member', {
+                    duration: 4000,
+                    position: 'top-right',
+                });
             }
         } catch (error) {
             console.error('Error deleting member:', error);
-            toast.error('Failed to delete member. Please try again.');
+            toast.dismiss(loadingToast);
+            toast.error(error.message || 'Failed to delete member. Please try again.', {
+                duration: 4000,
+                position: 'top-right',
+            });
         }
-    };
-
-    const closeDeleteConfirm = () => {
-        setShowDeleteConfirm(false);
-        setSelectedMember(null);
     };
 
     return (
@@ -242,18 +313,11 @@ export default function MemberHistoryPage({ batches }) {
                                 <CardTitle>Member History by Batch</CardTitle>
                                 <div className="flex gap-2">
                                     <Button
-                                        onClick={handleAddMember}
-                                        className="bg-green-600 hover:bg-green-700 text-white"
-                                    >
-                                        <Plus className="mr-2 h-4 w-4" />
-                                        Add Member
-                                    </Button>
-                                    <Button
                                         onClick={() => setShowBulkAddModal(true)}
                                         className="bg-purple-600 hover:bg-purple-700 text-white"
                                     >
                                         <Upload className="mr-2 h-4 w-4" />
-                                        Bulk Add
+                                        Bulk Add Members
                                     </Button>
                                     <Button
                                         onClick={handleExportPDF}
@@ -323,17 +387,6 @@ export default function MemberHistoryPage({ batches }) {
                 </main>
             </SidebarInset>
             
-            {/* Add Member Modal */}
-            {showAddMemberModal && (
-                <SimplifiedAddMemberModal
-                    formData={formData}
-                    handleChange={handleChange}
-                    handleSubmit={handleAddSubmit}
-                    closeModal={closeAddModal}
-                    batches={batches || []}
-                />
-            )}
-
             {/* Edit Member Modal */}
             {showEditMemberModal && (
                 <SimplifiedAddMemberModal
@@ -342,36 +395,9 @@ export default function MemberHistoryPage({ batches }) {
                     handleSubmit={handleEditSubmit}
                     closeModal={closeEditModal}
                     batches={batches || []}
+                    title="Edit Member"
+                    isEdit={true}
                 />
-            )}
-
-            {/* Delete Confirmation Modal */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="fixed inset-0 bg-black bg-opacity-40" onClick={closeDeleteConfirm} />
-                    <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-                        <h2 className="text-2xl font-bold text-red-600 mb-4">Confirm Delete</h2>
-                        <p className="text-gray-700 mb-6">
-                            Are you sure you want to delete <strong>{selectedMember?.firstname} {selectedMember?.lastname}</strong>?
-                            This action cannot be undone.
-                        </p>
-                        <div className="flex gap-3">
-                            <Button
-                                onClick={confirmDelete}
-                                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                            >
-                                Delete
-                            </Button>
-                            <Button
-                                onClick={closeDeleteConfirm}
-                                variant="outline"
-                                className="flex-1"
-                            >
-                                Cancel
-                            </Button>
-                        </div>
-                    </div>
-                </div>
             )}
 
             {/* Bulk Add Member Modal */}

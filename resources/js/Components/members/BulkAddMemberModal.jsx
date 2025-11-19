@@ -144,21 +144,46 @@ export default function BulkAddMemberModal({ closeModal, batches = [] }) {
             toast.dismiss(loadingToast);
 
             if (data.success) {
-                toast.success(
-                    `Successfully imported ${members.length} member${
-                        members.length > 1 ? "s" : ""
-                    }!`,
-                    {
-                        duration: 4000,
-                        position: "top-right",
+                const { successful, failed, errors } = data.data || {};
+                
+                // Show success message
+                if (successful > 0) {
+                    toast.success(
+                        `Successfully imported ${successful} member${
+                            successful > 1 ? "s" : ""
+                        }!`,
+                        {
+                            duration: 4000,
+                            position: "top-right",
+                        }
+                    );
+                }
+
+                // Show warning if some failed
+                if (failed > 0) {
+                    toast.error(
+                        `${failed} member${failed > 1 ? "s" : ""} failed to import. ${
+                            errors && errors.length > 0 
+                                ? "Check console for details." 
+                                : ""
+                        }`,
+                        {
+                            duration: 6000,
+                            position: "top-right",
+                        }
+                    );
+                    
+                    // Log errors to console for debugging
+                    if (errors && errors.length > 0) {
+                        console.error("Import errors:", errors);
                     }
-                );
+                }
 
                 // Close modal and reload after a short delay
                 setTimeout(() => {
                     handleClose();
                     window.location.reload();
-                }, 1000);
+                }, 1500);
             } else {
                 toast.error(data.message || "Failed to import members", {
                     duration: 5000,

@@ -98,11 +98,19 @@ export default function AuthModal({
 
             await new Promise(resolve => setTimeout(resolve, 500));
 
-            const result = await authenticateFace(videoRef.current, enrolledData.faces);
+            // Use more lenient threshold for admin authentication (0.6 instead of 0.55)
+            console.log('🔐 Admin Authentication - Starting face recognition...');
+            console.log('📊 Enrolled admin faces:', enrolledData.faces.length);
+            
+            const result = await authenticateFace(videoRef.current, enrolledData.faces, 0.6);
+
+            console.log('🎯 Authentication result:', result);
 
             if (!result.success) {
                 const newAttemptCount = attemptCount + 1;
                 setAttemptCount(newAttemptCount);
+                
+                console.log(`❌ Attempt ${newAttemptCount}/3 failed:`, result.error);
                 
                 if (newAttemptCount >= 3) {
                     setError("Face not recognized after 3 attempts. Please use password.");
@@ -113,6 +121,8 @@ export default function AuthModal({
                 setIsSubmitting(false);
                 return;
             }
+
+            console.log('✅ Face recognized! User:', result.user);
 
             // Verify with backend
             await onConfirm({ method: 'face', faceId: result.faceId, user: result.user });
@@ -153,8 +163,8 @@ export default function AuthModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full my-auto overflow-hidden">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-red-600 to-rose-600 p-6">
                     <div className="flex items-center justify-between">
@@ -322,7 +332,7 @@ export default function AuthModal({
                             {/* Attempt Warning */}
                             {attemptCount > 0 && attemptCount < 3 && (
                                 <div className="mb-4 p-3 bg-amber-50 rounded-lg border-l-4 border-amber-400">
-                                    <p className="text-amber-900 text-sm font-semibold">
+                                    <p className="text-amber-900 text-sm font-semibold break-words">
                                         Attempt {attemptCount}/3 - Please ensure good lighting and look directly at the camera
                                     </p>
                                 </div>
@@ -330,8 +340,8 @@ export default function AuthModal({
 
                             {/* Error Message */}
                             {error && (
-                                <div className="mb-4 p-3 bg-red-50 rounded-lg border-l-4 border-red-400">
-                                    <p className="text-red-800 text-sm">{error}</p>
+                                <div className="mb-4 p-3 bg-red-50 rounded-lg border-l-4 border-red-400 max-h-24 overflow-y-auto">
+                                    <p className="text-red-800 text-sm break-words">{error}</p>
                                 </div>
                             )}
 

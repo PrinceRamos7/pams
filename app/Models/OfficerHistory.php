@@ -26,6 +26,14 @@ class OfficerHistory extends Model
         'status',
     ];
 
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName()
+    {
+        return 'history_id';
+    }
+
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',

@@ -63,6 +63,7 @@ Route::middleware('auth')->group(function () {
 Route::get('/officers', [OfficerController::class, 'index'])->name('officers.index');
 Route::get('/officers/history', [OfficerController::class, 'history'])->name('officers.history');
 Route::get('/officers/history/export-pdf', [OfficerController::class, 'exportHistoryPDF'])->name('officers.history.export-pdf');
+Route::delete('/officers/history/{id}', [OfficerController::class, 'destroyHistory'])->name('officers.history.destroy');
 Route::post('/officers/batch', [OfficerController::class, 'storeBatchOfficers'])->name('officers.batch.store');
 Route::get('/officers/org-chart', [OfficerController::class, 'organizationChart'])->name('officers.org-chart');
 Route::get('/officers/export-pdf', [OfficerController::class, 'exportPDF'])->name('officers.export-pdf');

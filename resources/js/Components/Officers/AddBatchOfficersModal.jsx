@@ -4,7 +4,10 @@ import toast from "react-hot-toast";
 
 export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
     const [isVisible, setIsVisible] = useState(false);
-    const [batchName, setBatchName] = useState("");
+    const [batchMode, setBatchMode] = useState("existing"); // "existing" or "new"
+    const [selectedBatchId, setSelectedBatchId] = useState("");
+    const [newBatchName, setNewBatchName] = useState("");
+    const [existingBatches, setExistingBatches] = useState([]);
     const [officers, setOfficers] = useState([
         { position: "", member_name: "", student_id: "", sex: "", status: "Alumni" }
     ]);
@@ -54,10 +57,28 @@ export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
     useEffect(() => {
         if (isOpen) {
             setIsVisible(true);
+            fetchExistingBatches();
         } else {
             setIsVisible(false);
         }
     }, [isOpen]);
+
+    const fetchExistingBatches = async () => {
+        try {
+            const response = await fetch("/batches", {
+                headers: {
+                    "Accept": "application/json",
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setExistingBatches(Array.isArray(data) ? data : []);
+            }
+        } catch (error) {
+            console.error("Error fetching batches:", error);
+            setExistingBatches([]);
+        }
+    };
 
     const addOfficerRow = () => {
         setOfficers([
@@ -112,7 +133,13 @@ export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!batchName.trim()) {
+        // Validate batch selection
+        if (batchMode === "existing" && !selectedBatchId) {
+            toast.error("Please select an existing batch");
+            return;
+        }
+
+        if (batchMode === "new" && !newBatchName.trim()) {
             toast.error("Please enter a batch name");
             return;
         }
@@ -158,6 +185,23 @@ export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
         setIsSubmitting(true);
 
         try {
+            const requestBody = {
+                officers: officers.map((o) => ({
+                    position: o.position,
+                    member_name: o.member_name,
+                    student_id: o.student_id || null,
+                    sex: o.sex || null,
+                    status: o.status,
+                })),
+            };
+
+            // Add batch info based on mode
+            if (batchMode === "existing") {
+                requestBody.batch_id = selectedBatchId;
+            } else {
+                requestBody.batch_name = newBatchName;
+            }
+
             const response = await fetch("/officers/batch", {
                 method: "POST",
                 headers: {
@@ -166,16 +210,7 @@ export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
                         .querySelector('meta[name="csrf-token"]')
                         .getAttribute("content"),
                 },
-                body: JSON.stringify({
-                    batch_name: batchName,
-                    officers: officers.map((o) => ({
-                        position: o.position,
-                        member_name: o.member_name,
-                        student_id: o.student_id || null,
-                        sex: o.sex || null,
-                        status: o.status,
-                    })),
-                }),
+                body: JSON.stringify(requestBody),
             });
 
             const data = await response.json();
@@ -200,7 +235,9 @@ export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
     };
 
     const resetForm = () => {
-        setBatchName("");
+        setBatchMode("existing");
+        setSelectedBatchId("");
+        setNewBatchName("");
         setOfficers([
             { position: "", member_name: "", student_id: "", sex: "", status: "Alumni" }
         ]);
@@ -249,19 +286,72 @@ export default function AddBatchOfficersModal({ isOpen, onClose, onSuccess }) {
                 <form onSubmit={handleSubmit} className="flex flex-col max-h-[75vh]">
                     <div className="p-6 overflow-y-auto flex-1">
                         <div className="space-y-6">
-                            {/* Batch Name */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Batch Name <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={batchName}
-                                    onChange={(e) => setBatchName(e.target.value)}
-                                    placeholder="e.g., Batch 2023-2024"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    required
-                                />
+                            {/* Batch Information */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <h3 className="text-base font-semibold text-gray-800 mb-3">
+                                    Batch Information
+                                </h3>
+                                
+                                {/* Radio Buttons */}
+                                <div className="flex gap-6 mb-4">
+                                    <label className="flex items-center cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="batchMode"
+                                            value="existing"
+                                            checked={batchMode === "existing"}
+                                            onChange={(e) => setBatchMode(e.target.value)}
+                                            className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                                        />
+                                        <span className="ml-2 text-sm font-medium text-gray-700">
+                                            Select Existing Batch
+                                        </span>
+                                    </label>
+                                    
+                                    <label className="flex items-center cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="batchMode"
+                                            value="new"
+                                            checked={batchMode === "new"}
+                                            onChange={(e) => setBatchMode(e.target.value)}
+                                            className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                                        />
+                                        <span className="ml-2 text-sm font-medium text-gray-700">
+                                            Create New Batch
+                                        </span>
+                                    </label>
+                                </div>
+
+                                {/* Conditional Input */}
+                                {batchMode === "existing" ? (
+                                    <div>
+                                        <select
+                                            value={selectedBatchId}
+                                            onChange={(e) => setSelectedBatchId(e.target.value)}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                                            required
+                                        >
+                                            <option value="">Select Batch</option>
+                                            {existingBatches.map((batch) => (
+                                                <option key={batch.id} value={batch.id}>
+                                                    {batch.name} {batch.year ? `(${batch.year})` : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <input
+                                            type="text"
+                                            value={newBatchName}
+                                            onChange={(e) => setNewBatchName(e.target.value)}
+                                            placeholder="e.g., Batch 2023-2024"
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            required
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             {/* Officers List */}

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Edit, Trash2, X, MoreVertical, Users } from "lucide-react";
 import { router } from "@inertiajs/react";
+import toast from "react-hot-toast";
 import EditOfficerModal from "./EditOfficerModal";
 import BulkAddOfficersModal from "./BulkAddOfficersModal";
-import NotificationModal from "../NotificationModal";
 
 export default function OfficerTable({ officers }) {
     const [selectedOfficer, setSelectedOfficer] = useState(null);
@@ -12,12 +12,6 @@ export default function OfficerTable({ officers }) {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [openMenuId, setOpenMenuId] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const [notificationModal, setNotificationModal] = useState({
-        isOpen: false,
-        type: "success",
-        title: "",
-        message: "",
-    });
 
     // Filter officers based on search
     const filteredOfficers = officers.filter((officer) => {
@@ -48,13 +42,18 @@ export default function OfficerTable({ officers }) {
         setOpenMenuId(openMenuId === officerId ? null : officerId);
     };
 
-    const showNotificationModal = (title, message, type = "success") => {
-        setNotificationModal({
-            isOpen: true,
-            type,
-            title,
-            message,
-        });
+    const showNotificationToast = (message, type = "success") => {
+        if (type === "success") {
+            toast.success(message, {
+                duration: 3000,
+                position: 'top-right',
+            });
+        } else {
+            toast.error(message, {
+                duration: 4000,
+                position: 'top-right',
+            });
+        }
     };
 
     const openEditModal = (officer) => {
@@ -85,27 +84,21 @@ export default function OfficerTable({ officers }) {
     const handleDelete = () => {
         if (!selectedOfficer) return;
 
+        const loadingToast = toast.loading('Removing officer...', {
+            position: 'top-right',
+        });
+
         router.delete(`/officers/${selectedOfficer.officer_id}`, {
             preserveScroll: true,
             onSuccess: () => {
+                toast.dismiss(loadingToast);
                 closeDeleteModal();
-                setTimeout(() => {
-                    showNotificationModal(
-                        "Success!",
-                        `Officer removed successfully!`,
-                        "success"
-                    );
-                }, 100);
+                showNotificationToast('Officer removed successfully!', 'success');
             },
             onError: () => {
+                toast.dismiss(loadingToast);
                 closeDeleteModal();
-                setTimeout(() => {
-                    showNotificationModal(
-                        "Error!",
-                        "Failed to remove officer. Please try again.",
-                        "error"
-                    );
-                }, 100);
+                showNotificationToast('Failed to remove officer. Please try again.', 'error');
             },
         });
     };
@@ -264,7 +257,7 @@ export default function OfficerTable({ officers }) {
                     officer={selectedOfficer}
                     closeModal={closeEditModal}
                     existingOfficers={officers}
-                    showNotificationModal={showNotificationModal}
+                    showNotificationToast={showNotificationToast}
                 />
             )}
 
@@ -272,7 +265,7 @@ export default function OfficerTable({ officers }) {
                 <BulkAddOfficersModal
                     closeModal={closeBulkAddModal}
                     existingOfficers={officers}
-                    onNotify={showNotificationModal}
+                    onNotify={showNotificationToast}
                 />
             )}
 
@@ -344,18 +337,6 @@ export default function OfficerTable({ officers }) {
                 </div>
             )}
 
-            <NotificationModal
-                isOpen={notificationModal.isOpen}
-                onClose={() =>
-                    setNotificationModal({
-                        ...notificationModal,
-                        isOpen: false,
-                    })
-                }
-                type={notificationModal.type}
-                title={notificationModal.title}
-                message={notificationModal.message}
-            />
         </div>
     );
 }

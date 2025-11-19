@@ -12,6 +12,14 @@ class Officer extends Model
         'position',
         'batch_id',
     ];
+
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName()
+    {
+        return 'officer_id';
+    }
     
     public function member()
     {

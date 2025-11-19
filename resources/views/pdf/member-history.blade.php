@@ -60,9 +60,20 @@
             border-radius: 4px;
         }
         .history-header {
-            display: flex;
-            justify-content: space-between;
+            width: 100%;
             margin-bottom: 5px;
+        }
+        .history-header table {
+            width: 100%;
+        }
+        .history-header td {
+            vertical-align: top;
+        }
+        .history-header .left {
+            text-align: left;
+        }
+        .history-header .right {
+            text-align: right;
         }
         .action-badge {
             display: inline-block;
@@ -142,17 +153,23 @@
                     @forelse($member->history as $history)
                         <div class="history-item">
                             <div class="history-header">
-                                <div>
-                                    <span class="action-badge action-{{ $history->action }}">
-                                        {{ strtoupper($history->action) }}
-                                    </span>
-                                    <span style="margin-left: 5px; color: #6b7280;">
-                                        by {{ $history->user ? $history->user->name : 'System' }}
-                                    </span>
-                                </div>
-                                <span style="color: #9ca3af; font-size: 8px;">
-                                    {{ $history->created_at->format('M d, Y h:i A') }}
-                                </span>
+                                <table>
+                                    <tr>
+                                        <td class="left">
+                                            <span class="action-badge action-{{ $history->action }}">
+                                                {{ strtoupper($history->action) }}
+                                            </span>
+                                            <span style="margin-left: 5px; color: #6b7280;">
+                                                by {{ $history->user ? $history->user->name : 'System' }}
+                                            </span>
+                                        </td>
+                                        <td class="right">
+                                            <span style="color: #9ca3af; font-size: 8px;">
+                                                {{ $history->created_at->format('M d, Y h:i A') }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>
 
                             @if($history->description)

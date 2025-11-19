@@ -268,7 +268,6 @@ export default function BulkAddOfficersModal({
                 setTimeout(() => {
                     if (onNotify) {
                         onNotify(
-                            "Success!",
                             `${result.count} officer(s) added successfully!`,
                             "success"
                         );

@@ -7,6 +7,8 @@ export default function SimplifiedAddMemberModal({
     handleSubmit,
     closeModal,
     batches = [],
+    title = "Add New Member",
+    isEdit = false,
 }) {
     const [isVisible, setIsVisible] = useState(false);
 
@@ -43,14 +45,14 @@ export default function SimplifiedAddMemberModal({
                     <X size={20} />
                 </button>
 
-                <h2 className="text-2xl font-bold text-blue-600 mb-6">
-                    Add New Member
+                <h2 className={`text-2xl font-bold mb-6 ${isEdit ? 'text-orange-600' : 'text-blue-600'}`}>
+                    {title}
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Student ID (Optional) */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 text-center">
                             Student ID
                         </label>
                         <input
@@ -61,13 +63,13 @@ export default function SimplifiedAddMemberModal({
                             placeholder="23-00001 (optional)"
                             pattern="\d{2}-\d{5}"
                             title="Format: XX-XXXXX (e.g., 23-00001)"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
                         />
                     </div>
 
                     {/* First Name */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 text-center">
                             First Name <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -78,13 +80,13 @@ export default function SimplifiedAddMemberModal({
                             required
                             pattern="[a-zA-Z\s]+"
                             title="Only letters and spaces allowed"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
                         />
                     </div>
 
                     {/* Last Name */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 text-center">
                             Last Name <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -95,13 +97,13 @@ export default function SimplifiedAddMemberModal({
                             required
                             pattern="[a-zA-Z\s]+"
                             title="Only letters and spaces allowed"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
                         />
                     </div>
 
                     {/* Sex */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 text-center">
                             Sex <span className="text-red-500">*</span>
                         </label>
                         <select
@@ -109,7 +111,7 @@ export default function SimplifiedAddMemberModal({
                             value={formData.sex}
                             onChange={handleChange}
                             required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
                         >
                             <option value="">Select Sex</option>
                             <option value="Male">Male</option>
@@ -118,9 +120,24 @@ export default function SimplifiedAddMemberModal({
                         </select>
                     </div>
 
+                    {/* Birthdate */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1 text-center">
+                            Birthdate
+                        </label>
+                        <input
+                            type="date"
+                            name="birthdate"
+                            value={formData.birthdate || ''}
+                            onChange={handleChange}
+                            max={new Date().toISOString().split('T')[0]}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+                        />
+                    </div>
+
                     {/* Batch */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 text-center">
                             Batch <span className="text-red-500">*</span>
                         </label>
                         <select
@@ -128,7 +145,7 @@ export default function SimplifiedAddMemberModal({
                             value={formData.batch_id}
                             onChange={handleChange}
                             required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
                         >
                             <option value="">Select Batch</option>
                             {batches.map((batch) => (
@@ -143,9 +160,13 @@ export default function SimplifiedAddMemberModal({
                     <div className="flex gap-3 pt-4">
                         <button
                             type="submit"
-                            className="flex-1 px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+                            className={`flex-1 px-6 py-2 text-white font-semibold rounded-lg transition ${
+                                isEdit 
+                                    ? 'bg-orange-600 hover:bg-orange-700' 
+                                    : 'bg-blue-600 hover:bg-blue-700'
+                            }`}
                         >
-                            Save
+                            {isEdit ? 'Update' : 'Save'}
                         </button>
                         <button
                             type="button"

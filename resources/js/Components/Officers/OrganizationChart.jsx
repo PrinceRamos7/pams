@@ -5,22 +5,22 @@ import { User } from "lucide-react";
  * Reusable Organization Chart Component
  * Can be embedded anywhere in the application
  */
-export default function OrganizationChart({ 
-    officers, 
+export default function OrganizationChart({
+    officers,
     onImageClick = null,
     showUploadFeature = false,
-    className = ""
+    className = "",
 }) {
     // Helper function to get position-based default image
     const getPositionImage = (position, officerIndex = 0) => {
         const positionMap = {
-            "Adviser": `adviser-${officerIndex + 1}`,
-            "President": "president",
+            Adviser: `adviser-${officerIndex + 1}`,
+            President: "president",
             "Vice President - Internal": "vice-president-internal",
             "Vice President - External": "vice-president-external",
-            "Secretary": "secretary",
-            "Treasurer": "treasurer",
-            "Auditor": "auditor",
+            Secretary: "secretary",
+            Treasurer: "treasurer",
+            Auditor: "auditor",
             "Business Manager": `business-manager-${officerIndex + 1}`,
             "Public Information Officer (PIO)": `pio-${officerIndex + 1}`,
             "Attendance Officer": "attendance-officer",
@@ -37,7 +37,12 @@ export default function OrganizationChart({
         return officers.filter((officer) => officer.position === position);
     };
 
-    const OfficerCard = ({ officer, position, index = 0, positionIndex = 0 }) => {
+    const OfficerCard = ({
+        officer,
+        position,
+        index = 0,
+        positionIndex = 0,
+    }) => {
         const positionImage = getPositionImage(position, positionIndex);
         const imageUrl = officer.profile_picture || positionImage;
 
@@ -61,7 +66,9 @@ export default function OrganizationChart({
 
                 <div className="relative">
                     <div
-                        className={`w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 flex items-center justify-center mb-2 shadow-lg border-4 border-white relative overflow-hidden group ${showUploadFeature ? 'cursor-pointer' : ''}`}
+                        className={`w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 flex items-center justify-center mb-2 shadow-lg border-4 border-white relative overflow-hidden group ${
+                            showUploadFeature ? "cursor-pointer" : ""
+                        }`}
                         onClick={handleClick}
                     >
                         <div className="absolute inset-0 rounded-full border-2 border-blue-300 animate-ping opacity-75"></div>
@@ -91,7 +98,8 @@ export default function OrganizationChart({
                             className="w-full h-full rounded-full object-cover relative z-10"
                             onError={(e) => {
                                 e.target.style.display = "none";
-                                e.target.nextElementSibling.style.display = "block";
+                                e.target.nextElementSibling.style.display =
+                                    "block";
                             }}
                         />
                         <User className="w-8 h-8 text-white relative z-10 hidden" />
@@ -103,7 +111,9 @@ export default function OrganizationChart({
                 </h3>
 
                 <div className="mt-1 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full">
-                    <p className="text-[10px] text-white font-bold">{position}</p>
+                    <p className="text-[10px] text-white font-bold">
+                        {position}
+                    </p>
                 </div>
             </div>
         );
@@ -114,7 +124,10 @@ export default function OrganizationChart({
         const adviserImage = `/images/officers/adviser-${adviserNumber}.jpg`;
         const adviserId = `adviser-${adviserNumber}`;
         // Load saved name from localStorage or use default
-        const savedName = typeof window !== 'undefined' ? localStorage.getItem(adviserId) : null;
+        const savedName =
+            typeof window !== "undefined"
+                ? localStorage.getItem(adviserId)
+                : null;
         const adviserName = savedName || `Adviser ${adviserNumber}`;
 
         const handleClick = () => {
@@ -138,7 +151,9 @@ export default function OrganizationChart({
 
                 <div className="relative">
                     <div
-                        className={`w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 flex items-center justify-center mb-2 shadow-lg border-4 border-white relative overflow-hidden group ${showUploadFeature ? 'cursor-pointer' : ''}`}
+                        className={`w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 flex items-center justify-center mb-2 shadow-lg border-4 border-white relative overflow-hidden group ${
+                            showUploadFeature ? "cursor-pointer" : ""
+                        }`}
                         onClick={handleClick}
                     >
                         <div className="absolute inset-0 rounded-full border-2 border-blue-300 animate-ping opacity-75"></div>
@@ -168,7 +183,8 @@ export default function OrganizationChart({
                             className="w-full h-full rounded-full object-cover relative z-10"
                             onError={(e) => {
                                 e.target.style.display = "none";
-                                e.target.nextElementSibling.style.display = "block";
+                                e.target.nextElementSibling.style.display =
+                                    "block";
                             }}
                         />
                         <User className="w-8 h-8 text-white relative z-10 hidden" />
@@ -187,7 +203,9 @@ export default function OrganizationChart({
     };
 
     return (
-        <div className={`flex flex-col items-center justify-start gap-4 ${className}`}>
+        <div
+            className={`flex flex-col items-center justify-start gap-4 ${className}`}
+        >
             {/* Title */}
             <div className="text-center mb-2">
                 <h2 className="text-2xl font-bold text-gray-900 mb-1">
@@ -212,14 +230,16 @@ export default function OrganizationChart({
             {getOfficersByPosition("President").length > 0 && (
                 <div className="relative">
                     <div className="flex justify-center gap-2">
-                        {getOfficersByPosition("President").map((officer, idx) => (
-                            <OfficerCard
-                                key={officer.officer_id}
-                                officer={officer}
-                                position="President"
-                                index={idx}
-                            />
-                        ))}
+                        {getOfficersByPosition("President").map(
+                            (officer, idx) => (
+                                <OfficerCard
+                                    key={officer.officer_id}
+                                    officer={officer}
+                                    position="President"
+                                    index={idx}
+                                />
+                            )
+                        )}
                     </div>
                     {/* Vertical line down from President */}
                     <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-12 bg-blue-400"></div>
@@ -230,14 +250,17 @@ export default function OrganizationChart({
             <div className="relative">
                 {/* Horizontal line connecting VPs */}
                 <div className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-blue-400"></div>
-                
+
                 <div className="flex gap-32 justify-center relative pt-4">
                     {/* VP Internal */}
-                    {getOfficersByPosition("Vice President - Internal").length > 0 && (
+                    {getOfficersByPosition("Vice President - Internal").length >
+                        0 && (
                         <div className="relative">
                             {/* Vertical line up to horizontal connector */}
                             <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0.5 h-4 bg-blue-400"></div>
-                            {getOfficersByPosition("Vice President - Internal").map((officer, idx) => (
+                            {getOfficersByPosition(
+                                "Vice President - Internal"
+                            ).map((officer, idx) => (
                                 <OfficerCard
                                     key={officer.officer_id}
                                     officer={officer}
@@ -249,13 +272,16 @@ export default function OrganizationChart({
                             <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-12 bg-blue-400"></div>
                         </div>
                     )}
-                    
+
                     {/* VP External */}
-                    {getOfficersByPosition("Vice President - External").length > 0 && (
+                    {getOfficersByPosition("Vice President - External").length >
+                        0 && (
                         <div className="relative">
                             {/* Vertical line up to horizontal connector */}
                             <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0.5 h-4 bg-blue-400"></div>
-                            {getOfficersByPosition("Vice President - External").map((officer, idx) => (
+                            {getOfficersByPosition(
+                                "Vice President - External"
+                            ).map((officer, idx) => (
                                 <OfficerCard
                                     key={officer.officer_id}
                                     officer={officer}
@@ -274,7 +300,7 @@ export default function OrganizationChart({
             <div className="relative">
                 {/* Horizontal line connecting core officers */}
                 <div className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-blue-400"></div>
-                
+
                 <div className="flex gap-8 justify-center relative pt-4">
                     {/* Secretary */}
                     {getOfficersByPosition("Secretary").map((officer, idx) => (
@@ -287,7 +313,7 @@ export default function OrganizationChart({
                             />
                         </div>
                     ))}
-                    
+
                     {/* Treasurer */}
                     {getOfficersByPosition("Treasurer").map((officer, idx) => (
                         <div key={officer.officer_id} className="relative">
@@ -299,7 +325,7 @@ export default function OrganizationChart({
                             />
                         </div>
                     ))}
-                    
+
                     {/* Auditor */}
                     {getOfficersByPosition("Auditor").map((officer, idx) => (
                         <div key={officer.officer_id} className="relative">
@@ -316,64 +342,76 @@ export default function OrganizationChart({
 
             {/* Business Managers & PIO - Fourth Level */}
             <div className="flex gap-6 justify-center mt-8">
-                {getOfficersByPosition("Business Manager").map((officer, idx) => (
-                    <OfficerCard
-                        key={officer.officer_id}
-                        officer={officer}
-                        position="Business Manager"
-                        index={idx + 6}
-                        positionIndex={idx}
-                    />
-                ))}
-                {getOfficersByPosition("Public Information Officer (PIO)").map((officer, idx) => (
-                    <OfficerCard
-                        key={officer.officer_id}
-                        officer={officer}
-                        position="PIO"
-                        index={idx + 8}
-                        positionIndex={idx}
-                    />
-                ))}
+                {getOfficersByPosition("Business Manager").map(
+                    (officer, idx) => (
+                        <OfficerCard
+                            key={officer.officer_id}
+                            officer={officer}
+                            position="Business Manager"
+                            index={idx + 6}
+                            positionIndex={idx}
+                        />
+                    )
+                )}
+                {getOfficersByPosition("Public Information Officer (PIO)").map(
+                    (officer, idx) => (
+                        <OfficerCard
+                            key={officer.officer_id}
+                            officer={officer}
+                            position="PIO"
+                            index={idx + 8}
+                            positionIndex={idx}
+                        />
+                    )
+                )}
             </div>
 
             {/* Support Officers - Fifth Level */}
             <div className="flex gap-6 justify-center mt-8">
-                {getOfficersByPosition("Attendance Officer").map((officer, idx) => (
-                    <OfficerCard
-                        key={officer.officer_id}
-                        officer={officer}
-                        position="Attendance Officer"
-                        index={idx + 10}
-                    />
-                ))}
-                {getOfficersByPosition("PITON Representative").map((officer, idx) => (
-                    <OfficerCard
-                        key={officer.officer_id}
-                        officer={officer}
-                        position="PITON Representative"
-                        index={idx + 11}
-                    />
-                ))}
+                {getOfficersByPosition("Attendance Officer").map(
+                    (officer, idx) => (
+                        <OfficerCard
+                            key={officer.officer_id}
+                            officer={officer}
+                            position="Attendance Officer"
+                            index={idx + 10}
+                        />
+                    )
+                )}
+                {getOfficersByPosition("PITON Representative").map(
+                    (officer, idx) => (
+                        <OfficerCard
+                            key={officer.officer_id}
+                            officer={officer}
+                            position="PITON Representative"
+                            index={idx + 11}
+                        />
+                    )
+                )}
             </div>
 
             {/* Media Team - Sixth Level */}
             <div className="flex gap-6 justify-center mt-8">
-                {getOfficersByPosition("Media Team Director").map((officer, idx) => (
-                    <OfficerCard
-                        key={officer.officer_id}
-                        officer={officer}
-                        position="Media Team Director"
-                        index={idx + 12}
-                    />
-                ))}
-                {getOfficersByPosition("Media Team Managing Director").map((officer, idx) => (
-                    <OfficerCard
-                        key={officer.officer_id}
-                        officer={officer}
-                        position="Media Managing Director"
-                        index={idx + 13}
-                    />
-                ))}
+                {getOfficersByPosition("Media Team Director").map(
+                    (officer, idx) => (
+                        <OfficerCard
+                            key={officer.officer_id}
+                            officer={officer}
+                            position="Media Team Director"
+                            index={idx + 12}
+                        />
+                    )
+                )}
+                {getOfficersByPosition("Media Team Managing Director").map(
+                    (officer, idx) => (
+                        <OfficerCard
+                            key={officer.officer_id}
+                            officer={officer}
+                            position="MT Managing Director"
+                            index={idx + 13}
+                        />
+                    )
+                )}
             </div>
         </div>
     );

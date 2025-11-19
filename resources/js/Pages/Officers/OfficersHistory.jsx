@@ -1,44 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { Head, router, usePage } from "@inertiajs/react";
-import { Toaster } from "react-hot-toast";
+import { Toaster, toast } from "react-hot-toast";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "../../components/ui/sidebar";
 import { AppSidebar } from "../../components/app-sidebar";
 import { Separator } from "../../components/ui/separator";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { ChevronDown, ChevronUp, FileText, Plus, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, FileText, Plus, Search, Trash2 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import AddBatchOfficersModal from "../../components/Officers/AddBatchOfficersModal";
-import NotificationModal from "../../components/NotificationModal";
 
 export default function OfficersHistory({ batches }) {
     const [expandedBatch, setExpandedBatch] = useState(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [notificationModal, setNotificationModal] = useState({
-        isOpen: false,
-        type: "success",
-        title: "",
-        message: ""
-    });
     
     const { flash } = usePage().props;
 
     useEffect(() => {
         if (flash?.success) {
-            setNotificationModal({
-                isOpen: true,
-                type: "success",
-                title: "Success!",
-                message: flash.success
+            toast.success(flash.success, {
+                duration: 3000,
+                position: 'top-right',
             });
         } else if (flash?.error) {
-            setNotificationModal({
-                isOpen: true,
-                type: "error",
-                title: "Error!",
-                message: flash.error
+            toast.error(flash.error, {
+                duration: 4000,
+                position: 'top-right',
             });
         }
     }, [flash]);
@@ -55,6 +44,71 @@ export default function OfficersHistory({ batches }) {
 
     const handleAddSuccess = () => {
         router.reload({ only: ['batches'] });
+    };
+
+    const handleDeleteOfficer = (officer) => {
+        toast((t) => (
+            <div className="flex flex-col gap-3">
+                <div className="text-center">
+                    <p className="font-semibold text-gray-900">Delete Officer Record?</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                        Remove <strong>{officer.member_name}</strong> from <strong>{officer.position}</strong>?
+                    </p>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => {
+                            toast.dismiss(t.id);
+                            confirmDeleteOfficer(officer);
+                        }}
+                        className="flex-1 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition"
+                    >
+                        Delete
+                    </button>
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300 transition"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: 10000,
+            position: 'top-right',
+            style: {
+                minWidth: '350px',
+            },
+        });
+    };
+
+    const confirmDeleteOfficer = (officer) => {
+        const loadingToast = toast.loading('Deleting officer record...', {
+            position: 'top-right',
+        });
+
+        // Use different route based on whether it's a historical officer or current officer
+        const deleteUrl = officer.is_history 
+            ? `/officers/history/${officer.officer_id}`
+            : `/officers/${officer.officer_id}`;
+
+        router.delete(deleteUrl, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.dismiss(loadingToast);
+                toast.success('Officer record deleted successfully!', {
+                    duration: 3000,
+                    position: 'top-right',
+                });
+            },
+            onError: () => {
+                toast.dismiss(loadingToast);
+                toast.error('Failed to delete officer record. Please try again.', {
+                    duration: 4000,
+                    position: 'top-right',
+                });
+            },
+        });
     };
 
     // Filter batches and officers based on search term
@@ -162,6 +216,7 @@ export default function OfficersHistory({ batches }) {
                                                                     <th className="px-4 py-2 text-left">Student ID</th>
                                                                     <th className="px-4 py-2 text-left">Sex</th>
                                                                     <th className="px-4 py-2 text-left">Status</th>
+                                                                    <th className="px-4 py-2 text-center">Action</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody className="divide-y divide-gray-200">
@@ -186,6 +241,15 @@ export default function OfficersHistory({ batches }) {
                                                                                 </span>
                                                                             )}
                                                                         </td>
+                                                                        <td className="px-4 py-3 text-center">
+                                                                            <button
+                                                                                onClick={() => handleDeleteOfficer(officer)}
+                                                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                                                                                title="Delete officer record"
+                                                                            >
+                                                                                <Trash2 className="w-4 h-4" />
+                                                                            </button>
+                                                                        </td>
                                                                     </tr>
                                                                 ))}
                                                             </tbody>
@@ -206,14 +270,6 @@ export default function OfficersHistory({ batches }) {
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
                 onSuccess={handleAddSuccess}
-            />
-
-            <NotificationModal
-                isOpen={notificationModal.isOpen}
-                onClose={() => setNotificationModal({ ...notificationModal, isOpen: false })}
-                type={notificationModal.type}
-                title={notificationModal.title}
-                message={notificationModal.message}
             />
         </SidebarProvider>
     );
