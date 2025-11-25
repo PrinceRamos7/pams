@@ -47,7 +47,7 @@ class PitonMembersAndOfficersAY2025_2026Seeder extends Seeder
             ['student_id' => '22-00007', 'firstname' => 'Lady Heart', 'lastname' => 'Rivera', 'birthdate' => '2002-12-17', 'sex' => 'Female', 'phone_number' => '09361642603', 'email' => 'ladyheartrivera@gmail.com', 'address' => 'Capitol, Delfin Albano, Isabela', 'year' => 'Fourth Year'],
             ['student_id' => '22-00008', 'firstname' => 'Harold', 'lastname' => 'Agriam', 'birthdate' => '2003-07-18', 'sex' => 'Male', 'phone_number' => '09605468332', 'email' => 'agriamharold18@gmail.com', 'address' => 'Morado, City of Ilagan, Isabela', 'year' => 'Fourth Year'],
             ['student_id' => '22-10660', 'firstname' => 'Raven', 'lastname' => 'Pacorsa', 'birthdate' => '2004-04-08', 'sex' => 'Female', 'phone_number' => '09630260408', 'email' => 'ravenpacorsa08@gmail.com', 'address' => 'Bagumbayan, City of Ilagan, Isabela', 'year' => 'Fourth Year'],
-            ['student_id' => '25-00221', 'firstname' => 'Erlyn Joy', 'lastname' => 'Noveda', 'birthdate' => '2007-06-25', 'sex' => 'Female', 'phone_number' => '09996562688', 'email' => 'novedaerlynjoy@gmail.com', 'address' => 'Daramuangan Norte, San Mateo, Isabela', 'year' => 'First Year'],
+            ['student_id' => '25-00211', 'firstname' => 'Erlyn Joy', 'lastname' => 'Noveda', 'birthdate' => '2007-06-25', 'sex' => 'Female', 'phone_number' => '09996562688', 'email' => 'novedaerlynjoy@gmail.com', 'address' => 'Daramuangan Norte, San Mateo, Isabela', 'year' => 'First Year'],
             ['student_id' => '25-00001', 'firstname' => 'Dom Andrei', 'lastname' => 'Maneja', 'birthdate' => '2007-10-12', 'sex' => 'Male', 'phone_number' => '09166934737', 'email' => 'andreimaneja12@gmail.com', 'address' => 'Osmeña, City of Ilagan, Isabela', 'year' => 'First Year'],
             ['student_id' => '25-00018', 'firstname' => 'Henry', 'lastname' => 'Pereda III', 'birthdate' => '2007-09-12', 'sex' => 'Male', 'phone_number' => '09536890197', 'email' => 'peredahenry6@gmail.com', 'address' => 'Carmencita, Delfin Albano, Isabela', 'year' => 'First Year'],
             ['student_id' => '25-00161', 'firstname' => 'Henry', 'lastname' => 'Aggabao', 'birthdate' => '2007-01-19', 'sex' => 'Male', 'phone_number' => '09157417384', 'email' => 'aggabaohenry341@gmail.com', 'address' => 'Gayong Gayong Sur, City of Ilagan, Isabela', 'year' => 'First Year'],
@@ -105,7 +105,7 @@ class PitonMembersAndOfficersAY2025_2026Seeder extends Seeder
             ['position' => 'Business Manager', 'student_id' => '23-00782'], // Renato Beronia Jr.
             ['position' => 'Public Information Officer (PIO)', 'student_id' => '22-10668'], // Kenski Quiling
             ['position' => 'Public Information Officer (PIO)', 'student_id' => '22-00004'], // Kathrina Dela Rosa
-            ['position' => 'Attendance Officer', 'student_id' => '25-00221'], // Erlyn Joy Noveda
+            ['position' => 'Attendance Officer', 'student_id' => '25-00211'], // Erlyn Joy Noveda
             ['position' => 'PITON Representative', 'student_id' => '23-00001'], // Miah Lozano
             ['position' => 'Media Team Director', 'student_id' => '22-00002'], // Arnie Paril
             ['position' => 'Media Team Managing Director', 'student_id' => '22-00001'], // Mark Kevin Ramos
