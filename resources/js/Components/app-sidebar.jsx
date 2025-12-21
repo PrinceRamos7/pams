@@ -15,17 +15,44 @@ import {
 
 export function AppSidebar({ ...props }) {
     const { auth } = usePage().props;
+    const user = auth.user;
 
-    const data = {
-        teams: [
-            {
-                name: "PIMS",
-                logo: "/avatars/piton.png",
-                plan: "PITON Integrated",
-            },
-        ],
+    // Filter navigation based on user role
+    const getFilteredNavigation = () => {
+        // Attendance Manager - Dashboard and attendance pages
+        if (user.role === 'attendance_manager') {
+            return [
+                {
+                    title: "Dashboard",
+                    url: "/dashboard",
+                    icon: SquareTerminal,
+                    isActive: true,
+                },
+                {
+                    title: "Attendance",
+                    url: "#",
+                    icon: Calendar,
+                    isActive: false,
+                    items: [
+                        {
+                            title: "Events",
+                            url: route("attendance.index"),
+                        },
+                        {
+                            title: "Events with Sanctions",
+                            url: "/sanctions",
+                        },
+                        {
+                            title: "Member Sanctions",
+                            url: "/sanctions/members",
+                        },
+                    ],
+                },
+            ];
+        }
 
-        navMain: [
+        // Admin - Full access
+        return [
             {
                 title: "Dashboard",
                 url: "/dashboard",
@@ -66,7 +93,6 @@ export function AppSidebar({ ...props }) {
                         title: "Member Archive",
                         url: "/members/history/list",
                     },
-
                     {
                         title: "Officers",
                         url: "/officers",
@@ -99,7 +125,18 @@ export function AppSidebar({ ...props }) {
                 icon: Package,
                 isActive: false,
             },
+        ];
+    };
+
+    const data = {
+        teams: [
+            {
+                name: "PIMS",
+                logo: "/avatars/piton.png",
+                plan: "PITON Integrated",
+            },
         ],
+        navMain: getFilteredNavigation(),
     };
 
     const currentUser = {

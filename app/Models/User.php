@@ -15,6 +15,7 @@ class User extends Authenticatable
     // Role constants
     const ROLE_ADMIN = 'admin';
     const ROLE_ATTENDANCE_OFFICER = 'attendance_officer';
+    const ROLE_ATTENDANCE_MANAGER = 'attendance_manager';
     const ROLE_BUSINESS_MANAGER = 'business_manager';
 
     /**
@@ -72,6 +73,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is attendance manager
+     */
+    public function isAttendanceManager(): bool
+    {
+        return $this->role === self::ROLE_ATTENDANCE_MANAGER;
+    }
+
+    /**
      * Check if user is business manager
      */
     public function isBusinessManager(): bool
@@ -84,7 +93,7 @@ class User extends Authenticatable
      */
     public function canManageAttendance(): bool
     {
-        return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_ATTENDANCE_OFFICER]);
+        return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_ATTENDANCE_OFFICER, self::ROLE_ATTENDANCE_MANAGER]);
     }
 
     /**

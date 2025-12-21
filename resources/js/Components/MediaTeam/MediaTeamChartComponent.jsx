@@ -6,18 +6,26 @@ export default function MediaTeamChartComponent({ mediaTeam, onCardClick = null,
         return mediaTeam.filter((member) => member.role === role);
     };
 
-    const MediaTeamCard = ({ member, index = 0 }) => {
+    const MediaTeamCard = ({ member, index = 0, isLeader = false }) => {
         return (
             <div
-                className="flex flex-col items-center p-3 bg-white rounded-xl shadow-lg border-2 border-purple-200 hover:border-purple-400 hover:shadow-xl hover:scale-105 transition-all duration-300 w-40 animate-fade-in-up relative cursor-pointer"
+                className={`flex flex-col items-center p-4 bg-white rounded-2xl shadow-lg border-2 hover:shadow-2xl hover:scale-105 transition-all duration-300 animate-fade-in-up relative cursor-pointer ${
+                    isLeader 
+                        ? 'border-purple-400 w-48 bg-gradient-to-br from-purple-50 to-pink-50' 
+                        : 'border-purple-200 hover:border-purple-400 w-44'
+                }`}
                 style={{ animationDelay: `${index * 100}ms` }}
                 onClick={() => onCardClick && onCardClick(member)}
             >
-                <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-purple-400 to-transparent rounded-tr-xl opacity-20"></div>
+                {/* Decorative corner */}
+                <div className={`absolute top-0 right-0 w-10 h-10 bg-gradient-to-br ${
+                    isLeader ? 'from-purple-500' : 'from-purple-400'
+                } to-transparent rounded-tr-2xl opacity-20`}></div>
 
-                <div className="relative">
+                {/* Profile Picture */}
+                <div className="relative mb-3">
                     <div 
-                        className={`w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 via-purple-600 to-pink-600 flex items-center justify-center mb-2 shadow-lg border-4 border-white relative overflow-hidden group ${showUploadFeature ? 'cursor-pointer' : ''}`}
+                        className={`${isLeader ? 'w-20 h-20' : 'w-16 h-16'} rounded-full bg-gradient-to-br from-purple-500 via-purple-600 to-pink-600 flex items-center justify-center shadow-lg border-4 border-white relative overflow-hidden group ${showUploadFeature ? 'cursor-pointer' : ''}`}
                         onClick={(e) => {
                             if (showUploadFeature && onUploadClick) {
                                 e.stopPropagation();
@@ -25,8 +33,12 @@ export default function MediaTeamChartComponent({ mediaTeam, onCardClick = null,
                             }
                         }}
                     >
-                        <div className="absolute inset-0 rounded-full border-2 border-purple-300 animate-ping opacity-75"></div>
+                        {/* Animated ring */}
+                        {isLeader && (
+                            <div className="absolute inset-0 rounded-full border-2 border-purple-300 animate-ping opacity-75"></div>
+                        )}
 
+                        {/* Upload overlay */}
                         {showUploadFeature && (
                             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center z-20">
                                 <svg
@@ -57,16 +69,22 @@ export default function MediaTeamChartComponent({ mediaTeam, onCardClick = null,
                                 }}
                             />
                         ) : null}
-                        <User className={`w-8 h-8 text-white relative z-10 ${member.profile_picture ? 'hidden' : ''}`} />
+                        <User className={`${isLeader ? 'w-10 h-10' : 'w-8 h-8'} text-white relative z-10 ${member.profile_picture ? 'hidden' : ''}`} />
                     </div>
                 </div>
 
-                <h3 className="font-bold text-gray-900 text-center text-xs leading-tight uppercase tracking-wide">
+                {/* Name */}
+                <h3 className={`font-bold text-gray-900 text-center leading-tight uppercase tracking-wide ${
+                    isLeader ? 'text-sm' : 'text-xs'
+                }`}>
                     {member.firstname} {member.lastname}
                 </h3>
 
-                <div className="mt-1 px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full">
-                    <p className="text-[10px] text-white font-bold">
+                {/* Role Badge */}
+                <div className={`mt-2 px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full shadow-md ${
+                    isLeader ? 'px-4 py-1.5' : ''
+                }`}>
+                    <p className={`text-white font-bold ${isLeader ? 'text-xs' : 'text-[10px]'}`}>
                         {member.role}
                     </p>
                 </div>
@@ -79,13 +97,16 @@ export default function MediaTeamChartComponent({ mediaTeam, onCardClick = null,
     const members = getMediaTeamByRole("Media Team Member");
 
     return (
-        <div className="flex flex-col items-center justify-start gap-8 py-8">
-            {/* Title */}
+        <div className="flex flex-col items-center justify-start gap-8 py-8 px-4">
+            {/* Enhanced Title */}
             <div className="text-center mb-4">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                    MEDIA TEAM CHART
-                </h2>
-                <p className="text-sm text-purple-600 font-medium">
+                <div className="inline-block">
+                    <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-purple-500 to-pink-600 bg-clip-text text-transparent mb-2">
+                        MEDIA TEAM CHART
+                    </h2>
+                    <div className="h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent rounded-full"></div>
+                </div>
+                <p className="text-sm text-purple-600 font-medium mt-3 tracking-wide">
                     PITON Media Team Structure
                 </p>
             </div>
@@ -93,37 +114,37 @@ export default function MediaTeamChartComponent({ mediaTeam, onCardClick = null,
             {/* Director Level */}
             {director && (
                 <div className="relative">
-                    <MediaTeamCard member={director} index={0} />
-                    {/* Vertical line down */}
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-12 bg-purple-400"></div>
+                    <MediaTeamCard member={director} index={0} isLeader={true} />
+                    {/* Vertical line down with gradient */}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-12 bg-gradient-to-b from-purple-400 to-purple-300"></div>
                 </div>
             )}
 
             {/* Managing Director Level */}
             {managingDirector && (
                 <div className="relative">
-                    <MediaTeamCard member={managingDirector} index={1} />
-                    {/* Vertical line down */}
+                    <MediaTeamCard member={managingDirector} index={1} isLeader={true} />
+                    {/* Vertical line down with gradient */}
                     {members.length > 0 && (
-                        <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-12 bg-purple-400"></div>
+                        <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-12 bg-gradient-to-b from-purple-400 to-purple-300"></div>
                     )}
                 </div>
             )}
 
             {/* Members Level */}
             {members.length > 0 && (
-                <div className="relative">
-                    {/* Horizontal line connecting members */}
+                <div className="relative pt-12">
+                    {/* Horizontal line connecting members - positioned above the cards */}
                     {members.length > 1 && (
-                        <div className="absolute top-0 left-0 right-0 h-0.5 bg-purple-400" style={{ top: '-12px' }}></div>
+                        <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-purple-400 to-transparent" style={{ top: '0px' }}></div>
                     )}
                     
-                    <div className="flex gap-6 justify-center flex-wrap max-w-5xl">
+                    <div className="flex gap-6 justify-center flex-wrap max-w-6xl">
                         {members.map((member, idx) => (
                             <div key={member.media_team_id} className="relative">
-                                {/* Vertical line up to horizontal connector */}
+                                {/* Vertical line connecting to horizontal line - only if multiple members */}
                                 {members.length > 1 && (
-                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0.5 h-12 bg-purple-400"></div>
+                                    <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 bg-purple-400" style={{ top: '-48px' }}></div>
                                 )}
                                 <MediaTeamCard member={member} index={idx + 2} />
                             </div>

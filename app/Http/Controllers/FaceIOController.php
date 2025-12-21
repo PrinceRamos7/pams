@@ -84,6 +84,7 @@ class FaceIOController extends Controller
                         'student_id' => $member->student_id,
                         'firstname' => $member->firstname,
                         'lastname' => $member->lastname,
+                        'faceio_id' => $member->faceio_id, // Include faceio_id for attendance recording
                     ]
                 ];
             });

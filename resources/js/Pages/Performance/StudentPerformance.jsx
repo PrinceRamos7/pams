@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
-import { ArrowLeft, User } from 'lucide-react';
+import { ArrowLeft, User, Download } from 'lucide-react';
 import PerformanceChart from '@/Components/Performance/PerformanceChart';
 import CategoryScoresChart from '@/Components/Performance/CategoryScoresChart';
 import RadarScoresChart from '@/Components/Performance/RadarScoresChart';
@@ -36,6 +36,10 @@ export default function StudentPerformance({
 
     const gradeInfo = getPerformanceGrade(totalScore);
 
+    const handleExportPdf = () => {
+        window.location.href = route('performance.student.export-pdf', member.member_id);
+    };
+
     return (
         <SidebarProvider>
             <AppSidebar />
@@ -55,15 +59,23 @@ export default function StudentPerformance({
 
                 <div className="flex-1 p-6">
                     <div className="max-w-7xl mx-auto">
-                        {/* Back Button */}
-                        <Button
-                            variant="ghost"
-                            onClick={() => router.visit(route('members.index'))}
-                            className="mb-4"
-                        >
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Back to Members
-                        </Button>
+                        {/* Back Button and Export */}
+                        <div className="flex justify-between items-center mb-4">
+                            <Button
+                                variant="ghost"
+                                onClick={() => router.visit(route('members.index'))}
+                            >
+                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                Back to Members
+                            </Button>
+                            <Button
+                                onClick={handleExportPdf}
+                                className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
+                            >
+                                <Download className="w-4 h-4 mr-2" />
+                                Export PDF
+                            </Button>
+                        </div>
 
                         {/* Student Info Card */}
                         <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">

@@ -42,6 +42,7 @@ export default function OrganizationChart({
         position,
         index = 0,
         positionIndex = 0,
+        isLeader = false,
     }) => {
         const positionImage = getPositionImage(position, positionIndex);
         const imageUrl = officer.profile_picture || positionImage;
@@ -59,19 +60,27 @@ export default function OrganizationChart({
 
         return (
             <div
-                className="flex flex-col items-center p-3 bg-white rounded-xl shadow-lg border-2 border-blue-200 hover:border-blue-400 hover:shadow-xl hover:scale-105 transition-all duration-300 w-40 animate-fade-in-up relative"
+                className={`flex flex-col items-center p-4 bg-white rounded-2xl shadow-lg border-2 hover:shadow-2xl hover:scale-105 transition-all duration-300 animate-fade-in-up relative ${
+                    isLeader 
+                        ? 'border-blue-400 w-48 bg-gradient-to-br from-blue-50 to-purple-50' 
+                        : 'border-blue-200 hover:border-blue-400 w-44'
+                }`}
                 style={{ animationDelay: `${index * 100}ms` }}
             >
-                <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-blue-400 to-transparent rounded-tr-xl opacity-20"></div>
+                <div className={`absolute top-0 right-0 w-10 h-10 bg-gradient-to-br ${
+                    isLeader ? 'from-blue-500' : 'from-blue-400'
+                } to-transparent rounded-tr-2xl opacity-20`}></div>
 
-                <div className="relative">
+                <div className="relative mb-3">
                     <div
-                        className={`w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 flex items-center justify-center mb-2 shadow-lg border-4 border-white relative overflow-hidden group ${
+                        className={`${isLeader ? 'w-20 h-20' : 'w-16 h-16'} rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 flex items-center justify-center shadow-lg border-4 border-white relative overflow-hidden group ${
                             showUploadFeature ? "cursor-pointer" : ""
                         }`}
                         onClick={handleClick}
                     >
-                        <div className="absolute inset-0 rounded-full border-2 border-blue-300 animate-ping opacity-75"></div>
+                        {isLeader && (
+                            <div className="absolute inset-0 rounded-full border-2 border-blue-300 animate-ping opacity-75"></div>
+                        )}
 
                         {showUploadFeature && (
                             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center z-20">
@@ -102,16 +111,20 @@ export default function OrganizationChart({
                                     "block";
                             }}
                         />
-                        <User className="w-8 h-8 text-white relative z-10 hidden" />
+                        <User className={`${isLeader ? 'w-10 h-10' : 'w-8 h-8'} text-white relative z-10 hidden`} />
                     </div>
                 </div>
 
-                <h3 className="font-bold text-gray-900 text-center text-xs leading-tight uppercase tracking-wide">
+                <h3 className={`font-bold text-gray-900 text-center leading-tight uppercase tracking-wide ${
+                    isLeader ? 'text-sm' : 'text-xs'
+                }`}>
                     {officer.firstname} {officer.lastname}
                 </h3>
 
-                <div className="mt-1 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full">
-                    <p className="text-[10px] text-white font-bold">
+                <div className={`mt-2 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full shadow-md ${
+                    isLeader ? 'px-4 py-1.5' : ''
+                }`}>
+                    <p className={`text-white font-bold ${isLeader ? 'text-xs' : 'text-[10px]'}`}>
                         {position}
                     </p>
                 </div>
@@ -123,7 +136,6 @@ export default function OrganizationChart({
     const AdviserCard = ({ adviserNumber, index }) => {
         const adviserImage = `/images/officers/adviser-${adviserNumber}.jpg`;
         const adviserId = `adviser-${adviserNumber}`;
-        // Load saved name from localStorage or use default
         const savedName =
             typeof window !== "undefined"
                 ? localStorage.getItem(adviserId)
@@ -144,14 +156,14 @@ export default function OrganizationChart({
 
         return (
             <div
-                className="flex flex-col items-center p-3 bg-white rounded-xl shadow-lg border-2 border-blue-200 hover:border-blue-400 hover:shadow-xl hover:scale-105 transition-all duration-300 w-40 animate-fade-in-up relative"
+                className="flex flex-col items-center p-4 bg-white rounded-2xl shadow-lg border-2 border-blue-400 hover:shadow-2xl hover:scale-105 transition-all duration-300 w-48 bg-gradient-to-br from-blue-50 to-purple-50 animate-fade-in-up relative"
                 style={{ animationDelay: `${index * 100}ms` }}
             >
-                <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-blue-400 to-transparent rounded-tr-xl opacity-20"></div>
+                <div className="absolute top-0 right-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-transparent rounded-tr-2xl opacity-20"></div>
 
-                <div className="relative">
+                <div className="relative mb-3">
                     <div
-                        className={`w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 flex items-center justify-center mb-2 shadow-lg border-4 border-white relative overflow-hidden group ${
+                        className={`w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 flex items-center justify-center shadow-lg border-4 border-white relative overflow-hidden group ${
                             showUploadFeature ? "cursor-pointer" : ""
                         }`}
                         onClick={handleClick}
@@ -187,16 +199,16 @@ export default function OrganizationChart({
                                     "block";
                             }}
                         />
-                        <User className="w-8 h-8 text-white relative z-10 hidden" />
+                        <User className="w-10 h-10 text-white relative z-10 hidden" />
                     </div>
                 </div>
 
-                <h3 className="font-bold text-gray-900 text-center text-xs leading-tight uppercase tracking-wide">
+                <h3 className="font-bold text-gray-900 text-center text-sm leading-tight uppercase tracking-wide">
                     {adviserName}
                 </h3>
 
-                <div className="mt-1 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full">
-                    <p className="text-[10px] text-white font-bold">Adviser</p>
+                <div className="mt-2 px-4 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full shadow-md">
+                    <p className="text-xs text-white font-bold">Adviser</p>
                 </div>
             </div>
         );
@@ -204,26 +216,29 @@ export default function OrganizationChart({
 
     return (
         <div
-            className={`flex flex-col items-center justify-start gap-4 ${className}`}
+            className={`flex flex-col items-center justify-start gap-8 py-8 px-4 ${className}`}
         >
-            {/* Title */}
-            <div className="text-center mb-2">
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">
-                    OFFICERS CHART
-                </h2>
-                <p className="text-sm text-blue-600 font-medium">
+            {/* Enhanced Title */}
+            <div className="text-center mb-4">
+                <div className="inline-block">
+                    <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 bg-clip-text text-transparent mb-2">
+                        OFFICERS CHART
+                    </h2>
+                    <div className="h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent rounded-full"></div>
+                </div>
+                <p className="text-sm text-blue-600 font-medium mt-3 tracking-wide">
                     PITON Officers Structure
                 </p>
             </div>
 
             {/* Advisers - Top Level (Static) */}
             <div className="relative">
-                <div className="flex justify-center gap-8">
+                <div className="flex justify-center gap-16">
                     <AdviserCard adviserNumber={1} index={0} />
                     <AdviserCard adviserNumber={2} index={1} />
                 </div>
-                {/* Vertical line down from Advisers */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-12 bg-blue-400"></div>
+                {/* Vertical line down from center */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-12 bg-gradient-to-b from-blue-400 to-blue-300"></div>
             </div>
 
             {/* President - Second Level */}
@@ -236,80 +251,78 @@ export default function OrganizationChart({
                                     key={officer.officer_id}
                                     officer={officer}
                                     position="President"
-                                    index={idx}
+                                    index={idx + 2}
+                                    isLeader={true}
                                 />
                             )
                         )}
                     </div>
                     {/* Vertical line down from President */}
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-12 bg-blue-400"></div>
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-12 bg-gradient-to-b from-blue-400 to-blue-300"></div>
                 </div>
             )}
 
-            {/* Vice Presidents - Second Level */}
-            <div className="relative">
+            {/* Vice Presidents - Third Level */}
+            <div className="relative pt-12">
                 {/* Horizontal line connecting VPs */}
-                <div className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-blue-400"></div>
-
-                <div className="flex gap-32 justify-center relative pt-4">
+                <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent" style={{ top: '0px' }}></div>
+                
+                <div className="flex gap-40 justify-center">
                     {/* VP Internal */}
-                    {getOfficersByPosition("Vice President - Internal").length >
-                        0 && (
+                    {getOfficersByPosition("Vice President - Internal").length > 0 && (
                         <div className="relative">
                             {/* Vertical line up to horizontal connector */}
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0.5 h-4 bg-blue-400"></div>
-                            {getOfficersByPosition(
-                                "Vice President - Internal"
-                            ).map((officer, idx) => (
+                            <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 bg-blue-400" style={{ top: '-48px' }}></div>
+                            {getOfficersByPosition("Vice President - Internal").map((officer, idx) => (
                                 <OfficerCard
                                     key={officer.officer_id}
                                     officer={officer}
                                     position="VP - Internal"
-                                    index={idx + 1}
+                                    index={idx + 3}
+                                    isLeader={true}
                                 />
                             ))}
                             {/* Vertical line down from VP */}
-                            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-12 bg-blue-400"></div>
+                            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-12 bg-gradient-to-b from-blue-400 to-blue-300"></div>
                         </div>
                     )}
 
                     {/* VP External */}
-                    {getOfficersByPosition("Vice President - External").length >
-                        0 && (
+                    {getOfficersByPosition("Vice President - External").length > 0 && (
                         <div className="relative">
                             {/* Vertical line up to horizontal connector */}
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0.5 h-4 bg-blue-400"></div>
-                            {getOfficersByPosition(
-                                "Vice President - External"
-                            ).map((officer, idx) => (
+                            <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 bg-blue-400" style={{ top: '-48px' }}></div>
+                            {getOfficersByPosition("Vice President - External").map((officer, idx) => (
                                 <OfficerCard
                                     key={officer.officer_id}
                                     officer={officer}
                                     position="VP - External"
-                                    index={idx + 2}
+                                    index={idx + 4}
+                                    isLeader={true}
                                 />
                             ))}
                             {/* Vertical line down from VP */}
-                            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-12 bg-blue-400"></div>
+                            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-12 bg-gradient-to-b from-blue-400 to-blue-300"></div>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Core Officers - Third Level */}
-            <div className="relative">
+            {/* Core Officers - Fourth Level */}
+            <div className="relative pt-12">
                 {/* Horizontal line connecting core officers */}
-                <div className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-blue-400"></div>
-
-                <div className="flex gap-8 justify-center relative pt-4">
+                <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent" style={{ top: '0px' }}></div>
+                
+                <div className="flex gap-10 justify-center">
                     {/* Secretary */}
                     {getOfficersByPosition("Secretary").map((officer, idx) => (
                         <div key={officer.officer_id} className="relative">
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0.5 h-4 bg-blue-400"></div>
+                            {/* Vertical line up to horizontal connector */}
+                            <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 bg-blue-400" style={{ top: '-48px' }}></div>
                             <OfficerCard
                                 officer={officer}
                                 position="Secretary"
-                                index={idx + 3}
+                                index={idx + 5}
                             />
                         </div>
                     ))}
@@ -317,11 +330,12 @@ export default function OrganizationChart({
                     {/* Treasurer */}
                     {getOfficersByPosition("Treasurer").map((officer, idx) => (
                         <div key={officer.officer_id} className="relative">
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0.5 h-4 bg-blue-400"></div>
+                            {/* Vertical line up to horizontal connector */}
+                            <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 bg-blue-400" style={{ top: '-48px' }}></div>
                             <OfficerCard
                                 officer={officer}
                                 position="Treasurer"
-                                index={idx + 4}
+                                index={idx + 6}
                             />
                         </div>
                     ))}
@@ -329,89 +343,111 @@ export default function OrganizationChart({
                     {/* Auditor */}
                     {getOfficersByPosition("Auditor").map((officer, idx) => (
                         <div key={officer.officer_id} className="relative">
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0.5 h-4 bg-blue-400"></div>
+                            {/* Vertical line up to horizontal connector */}
+                            <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 bg-blue-400" style={{ top: '-48px' }}></div>
                             <OfficerCard
                                 officer={officer}
                                 position="Auditor"
-                                index={idx + 5}
+                                index={idx + 7}
                             />
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Business Managers & PIO - Fourth Level */}
-            <div className="flex gap-6 justify-center mt-8">
-                {getOfficersByPosition("Business Manager").map(
-                    (officer, idx) => (
-                        <OfficerCard
-                            key={officer.officer_id}
-                            officer={officer}
-                            position="Business Manager"
-                            index={idx + 6}
-                            positionIndex={idx}
-                        />
-                    )
-                )}
-                {getOfficersByPosition("Public Information Officer (PIO)").map(
-                    (officer, idx) => (
-                        <OfficerCard
-                            key={officer.officer_id}
-                            officer={officer}
-                            position="PIO"
-                            index={idx + 8}
-                            positionIndex={idx}
-                        />
-                    )
-                )}
+            {/* Business Managers & PIO - Fifth Level */}
+            <div className="relative pt-12">
+                {/* Horizontal line connecting officers */}
+                <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent" style={{ top: '0px' }}></div>
+                
+                <div className="flex gap-12 justify-center flex-wrap max-w-5xl">
+                    {getOfficersByPosition("Business Manager").map((officer, idx) => (
+                        <div key={officer.officer_id} className="relative">
+                            {/* Vertical line up to horizontal connector */}
+                            <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 bg-blue-400" style={{ top: '-48px' }}></div>
+                            <OfficerCard
+                                officer={officer}
+                                position="Business Manager"
+                                index={idx + 8}
+                                positionIndex={idx}
+                            />
+                        </div>
+                    ))}
+                    {getOfficersByPosition("Public Information Officer (PIO)").map((officer, idx) => (
+                        <div key={officer.officer_id} className="relative">
+                            {/* Vertical line up to horizontal connector */}
+                            <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 bg-blue-400" style={{ top: '-48px' }}></div>
+                            <OfficerCard
+                                officer={officer}
+                                position="PIO"
+                                index={idx + 10}
+                                positionIndex={idx}
+                            />
+                        </div>
+                    ))}
+                </div>
             </div>
 
-            {/* Support Officers - Fifth Level */}
-            <div className="flex gap-6 justify-center mt-8">
-                {getOfficersByPosition("Attendance Officer").map(
-                    (officer, idx) => (
-                        <OfficerCard
-                            key={officer.officer_id}
-                            officer={officer}
-                            position="Attendance Officer"
-                            index={idx + 10}
-                        />
-                    )
-                )}
-                {getOfficersByPosition("PITON Representative").map(
-                    (officer, idx) => (
-                        <OfficerCard
-                            key={officer.officer_id}
-                            officer={officer}
-                            position="PITON Representative"
-                            index={idx + 11}
-                        />
-                    )
-                )}
+            {/* Support Officers - Sixth Level */}
+            <div className="relative pt-12">
+                {/* Horizontal line connecting officers */}
+                <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent" style={{ top: '0px' }}></div>
+                
+                <div className="flex gap-12 justify-center flex-wrap max-w-5xl">
+                    {getOfficersByPosition("Attendance Officer").map((officer, idx) => (
+                        <div key={officer.officer_id} className="relative">
+                            {/* Vertical line up to horizontal connector */}
+                            <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 bg-blue-400" style={{ top: '-48px' }}></div>
+                            <OfficerCard
+                                officer={officer}
+                                position="Attendance Officer"
+                                index={idx + 12}
+                            />
+                        </div>
+                    ))}
+                    {getOfficersByPosition("PITON Representative").map((officer, idx) => (
+                        <div key={officer.officer_id} className="relative">
+                            {/* Vertical line up to horizontal connector */}
+                            <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 bg-blue-400" style={{ top: '-48px' }}></div>
+                            <OfficerCard
+                                officer={officer}
+                                position="PITON Representative"
+                                index={idx + 13}
+                            />
+                        </div>
+                    ))}
+                </div>
             </div>
 
-            {/* Media Team - Sixth Level */}
-            <div className="flex gap-6 justify-center mt-8">
-                {getOfficersByPosition("Media Team Director").map(
-                    (officer, idx) => (
-                        <OfficerCard
-                            key={officer.officer_id}
-                            officer={officer}
-                            position="Media Team Director"
-                            index={idx + 12}
-                        />
-                    )
-                )}
-                {getOfficersByPosition("Media Team Managing Director").map(
-                    (officer, idx) => (
-                        <OfficerCard
-                            key={officer.officer_id}
-                            officer={officer}
-                            position="MT Managing Director"
-                            index={idx + 13}
-                        />
-                    )
-                )}
+            {/* Media Team - Seventh Level */}
+            <div className="relative pt-12">
+                {/* Horizontal line connecting officers */}
+                <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent" style={{ top: '0px' }}></div>
+                
+                <div className="flex gap-12 justify-center flex-wrap max-w-5xl">
+                    {getOfficersByPosition("Media Team Director").map((officer, idx) => (
+                        <div key={officer.officer_id} className="relative">
+                            {/* Vertical line up to horizontal connector */}
+                            <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 bg-blue-400" style={{ top: '-48px' }}></div>
+                            <OfficerCard
+                                officer={officer}
+                                position="Media Team Director"
+                                index={idx + 14}
+                            />
+                        </div>
+                    ))}
+                    {getOfficersByPosition("Media Team Managing Director").map((officer, idx) => (
+                        <div key={officer.officer_id} className="relative">
+                            {/* Vertical line up to horizontal connector */}
+                            <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 bg-blue-400" style={{ top: '-48px' }}></div>
+                            <OfficerCard
+                                officer={officer}
+                                position="MT Managing Director"
+                                index={idx + 15}
+                            />
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );

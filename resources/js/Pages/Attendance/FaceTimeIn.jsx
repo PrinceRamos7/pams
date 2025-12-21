@@ -106,8 +106,18 @@ export default function FaceTimeIn({ event }) {
 
             await new Promise(resolve => setTimeout(resolve, 500));
 
-            const result = await authenticateFace(videoRef.current, enrolledData.faces);
-            console.log('🎯 Authentication result:', result);
+            // Try authentication with progressive thresholds
+            let result = await authenticateFace(videoRef.current, enrolledData.faces, 0.55);
+            console.log('🎯 Authentication result (threshold 0.55):', result);
+            
+            // If failed, try with more lenient threshold
+            if (!result.success && attemptCount < 2) {
+                console.log('🔄 Retrying with more lenient threshold (0.65)...');
+                await new Promise(resolve => setTimeout(resolve, 300));
+                result = await authenticateFace(videoRef.current, enrolledData.faces, 0.65);
+                console.log('🎯 Authentication result (threshold 0.65):', result);
+            }
+            
             toast.dismiss();
 
             if (!result.success) {
@@ -125,7 +135,16 @@ export default function FaceTimeIn({ event }) {
                 return;
             }
 
+            // Validate that we have both faceId and member data
+            if (!result.faceId || !result.member) {
+                console.error('❌ Invalid authentication result:', result);
+                toast.error("Authentication data incomplete. Please try again.");
+                setIsProcessing(false);
+                return;
+            }
+
             console.log('✅ Matched Member:', result.member);
+            console.log('🔑 Face ID:', result.faceId);
             toast.success("Face verified successfully!");
 
             // Record attendance
@@ -149,11 +168,31 @@ export default function FaceTimeIn({ event }) {
 
     // Record attendance
     const recordAttendance = async (faceId, recognizedMember) => {
+        // Validate faceId before sending
+        if (!faceId) {
+            console.error('❌ No faceId provided to recordAttendance');
+            setErrorMessage("Face ID is missing. Please try scanning again.");
+            setShowErrorModal(true);
+            setIsProcessing(false);
+            return;
+        }
+
+        console.log('📤 Recording attendance with faceId:', faceId);
+        console.log('👤 Recognized member:', recognizedMember);
+
         const csrfToken = document
             .querySelector('meta[name="csrf-token"]')
             ?.getAttribute("content");
 
         try {
+            const requestBody = {
+                event_id: event.event_id,
+                faceio_id: faceId,
+                status: "Present",
+            };
+
+            console.log('📦 Request body:', requestBody);
+
             const response = await fetch("/attendance-records", {
                 method: "POST",
                 headers: {
@@ -161,11 +200,7 @@ export default function FaceTimeIn({ event }) {
                     Accept: "application/json",
                     "X-CSRF-TOKEN": csrfToken,
                 },
-                body: JSON.stringify({
-                    event_id: event.event_id,
-                    faceio_id: faceId,
-                    status: "Present",
-                }),
+                body: JSON.stringify(requestBody),
             });
 
             const data = await response.json();

@@ -25,10 +25,17 @@ class CheckRole
         }
 
         // Check if user has one of the required roles
-        if (!in_array($request->user()->role, $roles)) {
-            abort(403, 'Unauthorized access. You do not have permission to access this resource.');
+        foreach ($roles as $role) {
+            if ($request->user()->role === $role) {
+                return $next($request);
+            }
         }
 
-        return $next($request);
+        // Redirect based on user role
+        if ($request->user()->isAttendanceManager()) {
+            return redirect()->route('attendance.index')->with('error', 'You do not have permission to access this page.');
+        }
+
+        return redirect()->route('dashboard')->with('error', 'You do not have permission to access this page.');
     }
 }

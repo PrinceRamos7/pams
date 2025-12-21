@@ -125,4 +125,54 @@ class StudentPerformanceController extends Controller
 
         return back()->with('success', 'Performance record deleted successfully');
     }
+
+    /**
+     * Export student performance to PDF
+     */
+    public function exportPdf($memberId)
+    {
+        $member = Member::with(['batch', 'performances.category'])
+            ->findOrFail($memberId);
+
+        $categories = PerformanceCategory::active()->ordered()->get();
+        
+        // Get performances with category details
+        $performances = $member->performances()
+            ->with('category')
+            ->get()
+            ->map(function ($performance) {
+                return [
+                    'id' => $performance->id,
+                    'category_id' => $performance->category_id,
+                    'category_name' => $performance->category->name,
+                    'score' => $performance->score,
+                    'weight' => $performance->category->percentage_weight,
+                    'weighted_score' => $performance->weighted_score,
+                    'remarks' => $performance->remarks,
+                ];
+            });
+
+        // Calculate total performance score
+        $totalScore = $performances->sum('weighted_score');
+        $totalWeight = $categories->sum('percentage_weight');
+
+        // Determine grade
+        $grade = 'F';
+        if ($totalScore >= 90) $grade = 'A';
+        elseif ($totalScore >= 80) $grade = 'B';
+        elseif ($totalScore >= 70) $grade = 'C';
+        elseif ($totalScore >= 60) $grade = 'D';
+
+        $pdf = \PDF::loadView('pdf.student-performance', [
+            'member' => $member,
+            'performances' => $performances,
+            'totalScore' => round($totalScore, 2),
+            'totalWeight' => $totalWeight,
+            'grade' => $grade,
+        ]);
+
+        $filename = 'performance_' . $member->student_id . '_' . date('Y-m-d') . '.pdf';
+        
+        return $pdf->download($filename);
+    }
 }

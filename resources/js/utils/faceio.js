@@ -94,10 +94,10 @@ export const enrollFace = async (videoElement) => {
  * Authenticate face by comparing with stored descriptors
  * @param {HTMLVideoElement} videoElement - Video element with camera stream
  * @param {Array} storedDescriptors - Array of stored face descriptors with member info
- * @param {number} threshold - Distance threshold for matching (default: 0.55)
+ * @param {number} threshold - Distance threshold for matching (default: 0.6 - more lenient)
  * @returns {Promise<Object>} Authentication result
  */
-export const authenticateFace = async (videoElement, storedDescriptors, threshold = 0.55) => {
+export const authenticateFace = async (videoElement, storedDescriptors, threshold = 0.6) => {
     try {
         // Validate video element
         if (!videoElement || !videoElement.videoWidth || !videoElement.videoHeight) {
@@ -109,11 +109,11 @@ export const authenticateFace = async (videoElement, storedDescriptors, threshol
 
         await initFaceAPI();
         
-        // Detect face with better options
+        // Detect face with better options for more reliable detection
         const detection = await faceapi
             .detectSingleFace(videoElement, new faceapi.TinyFaceDetectorOptions({
-                inputSize: 416,
-                scoreThreshold: 0.5
+                inputSize: 512, // Increased for better accuracy
+                scoreThreshold: 0.4 // Lower threshold for easier detection
             }))
             .withFaceLandmarks()
             .withFaceDescriptor();

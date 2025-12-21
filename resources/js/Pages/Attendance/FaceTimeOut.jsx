@@ -165,7 +165,10 @@ export default function FaceTimeOut({ event }) {
             const findData = await findResponse.json();
 
             if (!findData.success || !findData.record) {
-                // No time-in record found - create a new record with only time-out (marked as "no time in")
+                // No time-in record found - create a new record with only time-out (marked as "late")
+                console.log('📝 No time-in found, creating time-out only record');
+                console.log('🔑 Using faceio_id:', recognizedMember.faceio_id);
+                
                 const createResponse = await fetch("/attendance-records", {
                     method: "POST",
                     headers: {
@@ -176,12 +179,14 @@ export default function FaceTimeOut({ event }) {
                     body: JSON.stringify({
                         event_id: event.event_id,
                         faceio_id: recognizedMember.faceio_id,
-                        status: "no_time_in",
+                        status: "late",
                         time_out_only: true,
                     }),
                 });
 
                 const createData = await createResponse.json();
+                
+                console.log('📦 Create response:', createData);
 
                 if (createData.success) {
                     // Show success modal with warning about no time-in
@@ -200,6 +205,7 @@ export default function FaceTimeOut({ event }) {
                         setIsProcessing(false);
                     }, 3000);
                 } else {
+                    console.error('❌ Failed to create time-out record:', createData);
                     setErrorMessage(createData.message || "Failed to record time out");
                     setShowErrorModal(true);
                     setIsProcessing(false);

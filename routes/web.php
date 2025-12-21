@@ -37,8 +37,8 @@ Route::middleware('auth')->group(function () {
     })->name('profile.register-face');
 });
 
-//Members
-Route::middleware('auth')->group(function () {
+//Members - Admin only
+Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/members', [MemberController::class, 'index'])->name('members.index');
     Route::get('/members/chart', [MemberController::class, 'chart'])->name('members.chart');
     Route::get('/members/export-pdf', [MemberController::class, 'exportPDF'])->name('members.export-pdf');
@@ -60,8 +60,8 @@ Route::middleware('auth')->group(function () {
     })->name('members.register-face');
 });
 
-//Media Team
-Route::middleware('auth')->group(function () {
+//Media Team - Admin only
+Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/media-team', [App\Http\Controllers\MediaTeamController::class, 'index'])->name('media-team.index');
     Route::get('/media-team/chart', [App\Http\Controllers\MediaTeamController::class, 'chart'])->name('media-team.chart');
     Route::post('/media-team', [App\Http\Controllers\MediaTeamController::class, 'store'])->name('media-team.store');
@@ -72,8 +72,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/media-team/{id}/upload-picture', [App\Http\Controllers\MediaTeamController::class, 'uploadProfilePicture'])->name('media-team.upload-picture');
 });
 
-//Officers
-Route::middleware('auth')->group(function () {
+//Officers - Admin only
+Route::middleware(['auth', 'role:admin'])->group(function () {
 Route::get('/officers', [OfficerController::class, 'index'])->name('officers.index');
 Route::get('/officers/history', [OfficerController::class, 'history'])->name('officers.history');
 Route::get('/officers/history/export-pdf', [OfficerController::class, 'exportHistoryPDF'])->name('officers.history.export-pdf');
@@ -104,8 +104,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/batches/{id}', [BatchController::class, 'destroy']);
 });
 
-//Attendance
-Route::middleware('auth')->group(function () {
+//Attendance - Admin and Attendance Manager
+Route::middleware(['auth', 'role:admin,attendance_manager'])->group(function () {
     Route::get('/attendance-events', [AttendanceEventController::class, 'index'])->name('attendance.index');
     Route::post('/attendance-events', [AttendanceEventController::class, 'store'])->name('attendance.store');
     Route::put('/attendance-events/{eventId}', [AttendanceEventController::class, 'update'])->name('attendance.update');
@@ -223,8 +223,8 @@ Route::prefix('api/sanctions')->middleware('auth')->group(function () {
     Route::delete('/event/{eventId}', [SanctionController::class, 'deleteEventSanctions'])->name('api.sanctions.delete-event');
 });
 
-// Sanctions Web Routes
-Route::middleware('auth')->group(function () {
+// Sanctions Web Routes - Admin and Attendance Manager
+Route::middleware(['auth', 'role:admin,attendance_manager'])->group(function () {
     Route::get('/sanctions', [SanctionController::class, 'index'])->name('sanctions.index');
     Route::get('/sanctions/event/{eventId}', [SanctionController::class, 'eventSanctions'])->name('sanctions.event');
     Route::get('/sanctions/members', [SanctionController::class, 'memberSanctionsIndex'])->name('sanctions.members');
@@ -241,13 +241,13 @@ Route::middleware('auth')->group(function () {
 
 
 
-// Attendance PDF Export
-Route::middleware('auth')->group(function () {
+// Attendance PDF Export - Admin and Attendance Manager
+Route::middleware(['auth', 'role:admin,attendance_manager'])->group(function () {
     Route::get('/attendance-records/{eventId}/export-pdf', [AttendanceRecordController::class, 'exportPDF'])->name('attendance-records.export-pdf');
 });
 
-// Performance Analytics
-Route::middleware('auth')->group(function () {
+// Performance Analytics - Admin only
+Route::middleware(['auth', 'role:admin'])->group(function () {
     // Category Management
     Route::get('/performance/categories', [PerformanceCategoryController::class, 'index'])->name('performance.categories.index');
     Route::post('/performance/categories', [PerformanceCategoryController::class, 'store'])->name('performance.categories.store');
@@ -257,6 +257,7 @@ Route::middleware('auth')->group(function () {
     
     // Student Performance
     Route::get('/performance/student/{memberId}', [StudentPerformanceController::class, 'show'])->name('performance.student.show');
+    Route::get('/performance/student/{memberId}/export-pdf', [StudentPerformanceController::class, 'exportPdf'])->name('performance.student.export-pdf');
     Route::post('/performance/student', [StudentPerformanceController::class, 'store'])->name('performance.student.store');
     Route::post('/performance/student/{memberId}/bulk-update', [StudentPerformanceController::class, 'bulkUpdate'])->name('performance.student.bulk-update');
     Route::delete('/performance/student/{id}', [StudentPerformanceController::class, 'destroy'])->name('performance.student.destroy');
