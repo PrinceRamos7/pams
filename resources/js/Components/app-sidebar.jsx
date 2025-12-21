@@ -1,6 +1,6 @@
 import { usePage } from "@inertiajs/react";
 import * as React from "react";
-import { SquareTerminal, Calendar, Users, Package } from "lucide-react";
+import { SquareTerminal, Calendar, Users, Package, BarChart3 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
@@ -78,6 +78,18 @@ export function AppSidebar({ ...props }) {
                     {
                         title: "Media Team",
                         url: "/media-team",
+                    },
+                ],
+            },
+            {
+                title: "Performance Analytics",
+                url: "#",
+                icon: BarChart3,
+                isActive: false,
+                items: [
+                    {
+                        title: "Category Settings",
+                        url: "/performance/categories",
                     },
                 ],
             },

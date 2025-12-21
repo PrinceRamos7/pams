@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Eye, Edit, Trash2, X, Camera, MoreVertical } from "lucide-react";
+import { Eye, Edit, Trash2, X, Camera, MoreVertical, BarChart3 } from "lucide-react";
 import { Inertia } from "@inertiajs/inertia";
 import { router } from "@inertiajs/react";
 import { Transition } from "@headlessui/react";
@@ -395,6 +395,17 @@ export default function MemberTable({ members, batches }) {
                                                     >
                                                         <Camera size={16} />
                                                         Register Face
+                                                    </button>
+                                                    
+                                                    <button
+                                                        onClick={() => {
+                                                            router.visit(route('performance.student.show', m.member_id));
+                                                            setOpenMenuId(null);
+                                                        }}
+                                                        className="w-full text-left px-4 py-2 hover:bg-blue-50 flex items-center gap-3 text-blue-700"
+                                                    >
+                                                        <BarChart3 size={16} />
+                                                        View Performance
                                                     </button>
                                                     
                                                     <div className="border-t border-gray-100 my-1"></div>

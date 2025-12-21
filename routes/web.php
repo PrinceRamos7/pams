@@ -8,6 +8,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\FaceIOController;
 use App\Http\Controllers\SanctionController;
+use App\Http\Controllers\PerformanceCategoryController;
+use App\Http\Controllers\StudentPerformanceController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use App\Models\Member;
@@ -244,4 +246,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/attendance-records/{eventId}/export-pdf', [AttendanceRecordController::class, 'exportPDF'])->name('attendance-records.export-pdf');
 });
 
+// Performance Analytics
+Route::middleware('auth')->group(function () {
+    // Category Management
+    Route::get('/performance/categories', [PerformanceCategoryController::class, 'index'])->name('performance.categories.index');
+    Route::post('/performance/categories', [PerformanceCategoryController::class, 'store'])->name('performance.categories.store');
+    Route::put('/performance/categories/{category}', [PerformanceCategoryController::class, 'update'])->name('performance.categories.update');
+    Route::delete('/performance/categories/{category}', [PerformanceCategoryController::class, 'destroy'])->name('performance.categories.destroy');
+    Route::get('/performance/categories/validate-weight', [PerformanceCategoryController::class, 'validateWeight'])->name('performance.categories.validate-weight');
+    
+    // Student Performance
+    Route::get('/performance/student/{memberId}', [StudentPerformanceController::class, 'show'])->name('performance.student.show');
+    Route::post('/performance/student', [StudentPerformanceController::class, 'store'])->name('performance.student.store');
+    Route::post('/performance/student/{memberId}/bulk-update', [StudentPerformanceController::class, 'bulkUpdate'])->name('performance.student.bulk-update');
+    Route::delete('/performance/student/{id}', [StudentPerformanceController::class, 'destroy'])->name('performance.student.destroy');
+});
+
 require __DIR__.'/auth.php';
+

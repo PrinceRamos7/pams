@@ -50,6 +50,24 @@ class Member extends Model
         return $this->hasMany(MemberHistory::class, 'member_id', 'member_id');
     }
 
+    public function performances()
+    {
+        return $this->hasMany(StudentPerformance::class, 'member_id', 'member_id');
+    }
+
+    /**
+     * Calculate total performance score
+     */
+    public function getTotalPerformanceScore()
+    {
+        return $this->performances()
+            ->with('category')
+            ->get()
+            ->sum(function ($performance) {
+                return ($performance->score * $performance->category->percentage_weight) / 100;
+            });
+    }
+
     /**
      * Boot method to track changes
      */
