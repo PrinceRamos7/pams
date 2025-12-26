@@ -3,8 +3,7 @@ import { Eye, Edit, Trash2, MoreVertical, Clock, Plus, Calendar, Users } from "l
 import { Transition } from "@headlessui/react";
 import { router } from "@inertiajs/react";
 import AuthModal from "../AuthModal";
-import NotificationModal from "../NotificationModal";
-import { Toaster } from "react-hot-toast";
+import toastService from "../../utils/toastService";
 
 export default function AttendanceTable() {
     const [events, setEvents] = useState([]);
@@ -28,18 +27,12 @@ export default function AttendanceTable() {
         title: '',
         message: ''
     });
-    const [notificationModal, setNotificationModal] = useState({
-        isOpen: false,
-        type: "success",
-        title: "",
-        message: ""
-    });
 
     useEffect(() => {
         fetch("/attendance-events", { headers: { Accept: "application/json" } })
             .then((res) => res.json())
             .then((data) => setEvents(data))
-            .catch(() => showNotification("Failed to fetch events", "error"));
+            .catch(() => toastService.error("Failed to fetch events"));
     }, []);
 
     // Close dropdown when clicking outside
@@ -63,17 +56,11 @@ export default function AttendanceTable() {
     }, []);
 
     const showNotification = (message, type = "success") => {
-        setNotification({ message, type });
-        setTimeout(() => setNotification({ message: "", type: "" }), 4000);
-    };
-
-    const showNotificationModal = (title, message, type = "success") => {
-        setNotificationModal({
-            isOpen: true,
-            type,
-            title,
-            message
-        });
+        if (type === "success") {
+            toastService.success(message);
+        } else {
+            toastService.error(message);
+        }
     };
 
     const verifyPassword = async (password) => {

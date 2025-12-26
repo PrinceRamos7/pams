@@ -107,7 +107,7 @@ export default function MemberList({ members: paginatedMembers, batches, filters
                                         </a>
                                         <button
                                             onClick={() => setShowBulkAddModal(true)}
-                                            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition"
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
                                         >
                                             <Upload size={18} />
                                             Add Members

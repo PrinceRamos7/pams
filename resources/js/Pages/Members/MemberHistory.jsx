@@ -314,7 +314,7 @@ export default function MemberHistoryPage({ batches }) {
                                 <div className="flex gap-2">
                                     <Button
                                         onClick={() => setShowBulkAddModal(true)}
-                                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                                        className="bg-blue-600 hover:bg-blue-700 text-white"
                                     >
                                         <Upload className="mr-2 h-4 w-4" />
                                         Bulk Add Members

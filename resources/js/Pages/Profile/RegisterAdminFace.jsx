@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Head, router, usePage } from "@inertiajs/react";
-import { Toaster, toast } from "react-hot-toast";
+import toastService from "../../utils/toastService";
 import { enrollFace, startCamera, stopCamera } from "../../utils/faceio";
-import NotificationModal from "../../Components/NotificationModal";
 import {
     SidebarProvider,
     SidebarInset,
@@ -26,23 +25,8 @@ export default function RegisterAdminFace() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [enrollmentSuccess, setEnrollmentSuccess] = useState(false);
     const [cameraActive, setCameraActive] = useState(false);
-    const [notificationModal, setNotificationModal] = useState({
-        isOpen: false,
-        type: "success",
-        title: "",
-        message: ""
-    });
     const videoRef = useRef(null);
     const streamRef = useRef(null);
-
-    const showNotificationModal = (title, message, type = "success") => {
-        setNotificationModal({
-            isOpen: true,
-            type,
-            title,
-            message
-        });
-    };
 
     const breadcrumbs = [
         { href: route("dashboard"), label: "Dashboard" },
@@ -59,29 +43,28 @@ export default function RegisterAdminFace() {
 
     const handleStartCamera = async () => {
         try {
-            toast.loading("Starting camera...");
+            const loadingToast = toastService.loading("Starting camera...");
             const stream = await startCamera(videoRef.current);
             streamRef.current = stream;
             
             await new Promise(resolve => setTimeout(resolve, 1000));
             
-            toast.dismiss();
+            toastService.dismiss(loadingToast);
             setCameraActive(true);
-            toast.success("Camera ready! Position your face in the frame.");
+            toastService.success("Camera ready! Position your face in the frame.");
         } catch (error) {
-            toast.dismiss();
-            toast.error(error.message || "Failed to start camera");
+            toastService.error(error.message || "Failed to start camera");
         }
     };
 
     const handleEnrollFace = async () => {
         if (!cameraActive) {
-            toast.error("Please start the camera first");
+            toastService.error("Please start the camera first");
             return;
         }
 
         if (!videoRef.current || !videoRef.current.videoWidth) {
-            toast.error("Video not ready. Please wait a moment and try again.");
+            toastService.error("Video not ready. Please wait a moment and try again.");
             return;
         }
 
@@ -89,15 +72,15 @@ export default function RegisterAdminFace() {
         setEnrollmentSuccess(false);
 
         try {
-            toast.loading("Analyzing face... Please stay still");
+            const loadingToast = toastService.loading("Analyzing face... Please stay still");
             
             await new Promise(resolve => setTimeout(resolve, 500));
             
             const result = await enrollFace(videoRef.current);
-            toast.dismiss();
+            toastService.dismiss(loadingToast);
 
             if (!result.success) {
-                toast.error(result.error || "Face enrollment failed");
+                toastService.error(result.error || "Face enrollment failed");
                 setIsProcessing(false);
                 return;
             }
@@ -140,22 +123,18 @@ export default function RegisterAdminFace() {
                     setCameraActive(false);
                 }
                 
-                showNotificationModal(
-                    "Success!",
-                    `Face registered successfully! You can now use face recognition for authentication.`,
-                    "success"
-                );
+                toastService.success("Face registered successfully! You can now use face recognition for authentication.");
                 
                 setTimeout(() => {
                     router.visit(route("dashboard"));
                 }, 2500);
             } else {
-                showNotificationModal("Error!", data.message || "Failed to save face data", "error");
+                toastService.error(data.message || "Failed to save face data");
             }
 
         } catch (error) {
             console.error("Face enrollment error:", error);
-            toast.error("Face enrollment failed");
+            toastService.error("Face enrollment failed");
         } finally {
             setIsProcessing(false);
         }
@@ -185,21 +164,17 @@ export default function RegisterAdminFace() {
             const data = await response.json();
 
             if (data.success) {
-                showNotificationModal(
-                    "Success!",
-                    `Face registration removed successfully!`,
-                    "success"
-                );
+                toastService.success("Face registration removed successfully!");
                 setTimeout(() => {
                     router.visit(route("dashboard"));
                 }, 2500);
             } else {
-                showNotificationModal("Error!", data.message || "Failed to remove face registration", "error");
+                toastService.error(data.message || "Failed to remove face registration");
             }
 
         } catch (error) {
             console.error("Face removal error:", error);
-            toast.error("Failed to remove face registration");
+            toastService.error("Failed to remove face registration");
         } finally {
             setIsProcessing(false);
         }
@@ -207,7 +182,6 @@ export default function RegisterAdminFace() {
 
     return (
         <SidebarProvider>
-            <Toaster position="top-right" />
             <AppSidebar />
             <Head title="Register Admin Face" />
 
@@ -382,14 +356,6 @@ export default function RegisterAdminFace() {
                     </div>
                 </main>
             </SidebarInset>
-
-            <NotificationModal
-                isOpen={notificationModal.isOpen}
-                onClose={() => setNotificationModal({ ...notificationModal, isOpen: false })}
-                type={notificationModal.type}
-                title={notificationModal.title}
-                message={notificationModal.message}
-            />
         </SidebarProvider>
     );
 }

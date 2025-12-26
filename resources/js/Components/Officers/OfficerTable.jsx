@@ -147,7 +147,7 @@ export default function OfficerTable({ officers }) {
                     </a>
                     <button
                         onClick={openBulkAddModal}
-                        className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg font-semibold"
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold"
                     >
                         <Users size={18} /> Add Officers
                     </button>

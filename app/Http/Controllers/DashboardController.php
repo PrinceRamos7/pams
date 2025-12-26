@@ -47,13 +47,20 @@ class DashboardController extends Controller
             $totalSanctionAmount = Sanction::sum('amount');
 
             // Attendance Analytics
+            // Count actual attendance records
             $totalAttendanceRecords = AttendanceRecord::count();
             $presentRecords = AttendanceRecord::where('status', 'Present')->count();
             $lateRecords = AttendanceRecord::where('status', 'late')->count();
-            $absentRecords = AttendanceRecord::where('status', 'absent')->count();
             
-            $attendanceRate = $totalAttendanceRecords > 0 
-                ? round(($presentRecords / $totalAttendanceRecords) * 100, 1) 
+            // Absent members are those with "Absent" sanctions (no attendance record)
+            $absentRecords = Sanction::where('reason', 'Absent')->count();
+            
+            // Total records should include absent members
+            $totalRecordsIncludingAbsent = $totalAttendanceRecords + $absentRecords;
+            
+            // Calculate attendance rate based on present records vs total (including absent)
+            $attendanceRate = $totalRecordsIncludingAbsent > 0 
+                ? round(($presentRecords / $totalRecordsIncludingAbsent) * 100, 1) 
                 : 0;
 
             // Current month statistics
@@ -112,7 +119,7 @@ class DashboardController extends Controller
                     'paymentRate' => $totalSanctions > 0 ? round(($paidSanctions / $totalSanctions) * 100, 1) : 0,
                 ],
                 'attendanceAnalytics' => [
-                    'totalRecords' => $totalAttendanceRecords,
+                    'totalRecords' => $totalRecordsIncludingAbsent,
                     'presentRecords' => $presentRecords,
                     'lateRecords' => $lateRecords,
                     'absentRecords' => $absentRecords,
@@ -155,14 +162,20 @@ class DashboardController extends Controller
         $totalSanctionAmount = Sanction::sum('amount');
 
         // Attendance Analytics
+        // Count actual attendance records
         $totalAttendanceRecords = AttendanceRecord::count();
         $presentRecords = AttendanceRecord::where('status', 'Present')->count();
         $lateRecords = AttendanceRecord::where('status', 'late')->count();
-        $absentRecords = AttendanceRecord::where('status', 'absent')->count();
         
-        // Calculate attendance rate
-        $attendanceRate = $totalAttendanceRecords > 0 
-            ? round(($presentRecords / $totalAttendanceRecords) * 100, 1) 
+        // Absent members are those with "Absent" sanctions (no attendance record)
+        $absentRecords = Sanction::where('reason', 'Absent')->count();
+        
+        // Total records should include absent members
+        $totalRecordsIncludingAbsent = $totalAttendanceRecords + $absentRecords;
+        
+        // Calculate attendance rate based on present records vs total (including absent)
+        $attendanceRate = $totalRecordsIncludingAbsent > 0 
+            ? round(($presentRecords / $totalRecordsIncludingAbsent) * 100, 1) 
             : 0;
 
         // Current month statistics
@@ -222,7 +235,7 @@ class DashboardController extends Controller
                 'paymentRate' => $totalSanctions > 0 ? round(($paidSanctions / $totalSanctions) * 100, 1) : 0,
             ],
             'attendanceAnalytics' => [
-                'totalRecords' => $totalAttendanceRecords,
+                'totalRecords' => $totalRecordsIncludingAbsent,
                 'presentRecords' => $presentRecords,
                 'lateRecords' => $lateRecords,
                 'absentRecords' => $absentRecords,

@@ -57,7 +57,7 @@ export default function MediaTeamList({ mediaTeam, batches, availableMembers, ha
                                 <div className="flex gap-3">
                                     <button
                                         onClick={() => router.visit('/media-team/chart')}
-                                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                                     >
                                         Media Team Chart
                                     </button>

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
-import { Button } from '@/Components/ui/button';
 import CategoryModal from '@/Components/Performance/CategoryModal';
 import CategoryTable from '@/Components/Performance/CategoryTable';
 import {
@@ -62,9 +61,15 @@ export default function CategorySettings({ auth, categories, totalWeight }) {
                                             Manage performance evaluation categories and weights
                                         </p>
                                     </div>
-                                    <Button onClick={() => setShowModal(true)}>
+                                    <button
+                                        onClick={() => setShowModal(true)}
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
                                         Add Category
-                                    </Button>
+                                    </button>
                                 </div>
 
                                 {/* Weight Summary */}

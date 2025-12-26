@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { MoreVertical, DollarSign, CheckCircle, X } from "lucide-react";
+import { MoreVertical, DollarSign } from "lucide-react";
 import { router } from "@inertiajs/react";
+import toastService from "../../utils/toastService";
 import {
     Card,
     CardContent,
@@ -13,7 +14,6 @@ export default function MemberSanctionDetailsTable({ sanctions }) {
     const [openMenuId, setOpenMenuId] = useState(null);
     const [selectedSanction, setSelectedSanction] = useState(null);
     const [showMarkAsPaidModal, setShowMarkAsPaidModal] = useState(false);
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
 
     const handleOpenMarkAsPaidModal = (sanction) => {
@@ -42,14 +42,15 @@ export default function MemberSanctionDetailsTable({ sanctions }) {
 
             if (data.success) {
                 setShowMarkAsPaidModal(false);
-                setShowSuccessModal(true);
-                // Reload the page after showing success modal
+                toastService.success("Sanction marked as paid successfully!");
+                // Reload the page after showing success toast
                 setTimeout(() => {
                     router.reload();
-                }, 2000);
+                }, 1500);
             }
         } catch (error) {
             console.error('Error marking sanction as paid:', error);
+            toastService.error("Failed to mark sanction as paid");
         } finally {
             setIsProcessing(false);
         }
@@ -178,52 +179,6 @@ export default function MemberSanctionDetailsTable({ sanctions }) {
                 onConfirm={handleMarkAsPaid}
                 sanction={selectedSanction}
             />
-
-            {/* Success Modal */}
-            {showSuccessModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 relative animate-in fade-in zoom-in duration-300">
-                        {/* Close Button */}
-                        <button
-                            onClick={() => {
-                                setShowSuccessModal(false);
-                                router.reload();
-                            }}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
-                        >
-                            <X size={24} />
-                        </button>
-
-                        {/* Success Icon */}
-                        <div className="flex justify-center mb-4">
-                            <div className="w-24 h-24 bg-teal-500 rounded-full flex items-center justify-center">
-                                <CheckCircle className="w-16 h-16 text-white" strokeWidth={2.5} />
-                            </div>
-                        </div>
-
-                        {/* Title */}
-                        <h2 className="text-2xl font-bold text-gray-800 text-center mb-3">
-                            Success!
-                        </h2>
-
-                        {/* Message */}
-                        <p className="text-gray-600 text-center mb-6">
-                            Sanction marked as paid successfully!
-                        </p>
-
-                        {/* Continue Button */}
-                        <button
-                            onClick={() => {
-                                setShowSuccessModal(false);
-                                router.reload();
-                            }}
-                            className="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3 rounded-xl transition shadow-lg"
-                        >
-                            Continue
-                        </button>
-                    </div>
-                </div>
-            )}
         </Card>
     );
 }

@@ -10,6 +10,19 @@ import {
     BarChart3,
     PieChart,
 } from "lucide-react";
+import {
+    BarChart,
+    Bar,
+    PieChart as RechartsPieChart,
+    Pie,
+    Cell,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+} from "recharts";
 
 export function ShowAnalytics({
     stats,
@@ -19,6 +32,41 @@ export function ShowAnalytics({
     topSanctionedMembers,
     statCards,
 }) {
+    // Prepare data for Sanctions Bar Chart
+    const sanctionsBarData = [
+        {
+            name: "Paid",
+            count: sanctionAnalytics.paidSanctions,
+            amount: sanctionAnalytics.totalPaidAmount || 0,
+        },
+        {
+            name: "Unpaid",
+            count: sanctionAnalytics.unpaidSanctions,
+            amount: sanctionAnalytics.totalUnpaidAmount || 0,
+        },
+    ];
+
+    // Prepare data for Attendance Pie Chart
+    const attendancePieData = [
+        {
+            name: "Present",
+            value: attendanceAnalytics.presentRecords,
+            color: "#10b981",
+        },
+        {
+            name: "Late",
+            value: attendanceAnalytics.lateRecords,
+            color: "#f59e0b",
+        },
+        {
+            name: "Absent",
+            value: attendanceAnalytics.absentRecords,
+            color: "#ef4444",
+        },
+    ];
+
+    const COLORS = ["#10b981", "#f59e0b", "#ef4444"];
+
     return (
         <>
             {/* Welcome Section with Logo */}
@@ -107,38 +155,60 @@ export function ShowAnalytics({
                                 <BarChart3 className="w-8 h-8 text-red-600" />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 bg-green-50 rounded-lg">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <CheckCircle className="w-4 h-4 text-green-600" />
-                                        <p className="text-xs text-gray-600">
-                                            Paid
-                                        </p>
-                                    </div>
-                                    <p className="text-xl font-bold text-green-700">
-                                        {sanctionAnalytics.paidSanctions}
-                                    </p>
-                                    <p className="text-xs text-green-600">
-                                        ₱
-                                        {sanctionAnalytics.totalPaidAmount?.toLocaleString()}
-                                    </p>
-                                </div>
-
-                                <div className="p-4 bg-red-50 rounded-lg">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <XCircle className="w-4 h-4 text-red-600" />
-                                        <p className="text-xs text-gray-600">
-                                            Unpaid
-                                        </p>
-                                    </div>
-                                    <p className="text-xl font-bold text-red-700">
-                                        {sanctionAnalytics.unpaidSanctions}
-                                    </p>
-                                    <p className="text-xs text-red-600">
-                                        ₱
-                                        {sanctionAnalytics.totalUnpaidAmount?.toLocaleString()}
-                                    </p>
-                                </div>
+                            {/* Bar Chart */}
+                            <div className="p-4 bg-white rounded-lg border border-gray-200">
+                                <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                                    Sanctions Overview
+                                </h4>
+                                <ResponsiveContainer width="100%" height={200}>
+                                    <BarChart data={sanctionsBarData}>
+                                        <CartesianGrid
+                                            strokeDasharray="3 3"
+                                            stroke="#e5e7eb"
+                                        />
+                                        <XAxis
+                                            dataKey="name"
+                                            tick={{ fontSize: 12 }}
+                                            stroke="#6b7280"
+                                        />
+                                        <YAxis
+                                            tick={{ fontSize: 12 }}
+                                            stroke="#6b7280"
+                                        />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: "#fff",
+                                                border: "1px solid #e5e7eb",
+                                                borderRadius: "8px",
+                                                fontSize: "12px",
+                                            }}
+                                            formatter={(value, name) => {
+                                                if (name === "amount") {
+                                                    return [
+                                                        `₱${value.toLocaleString()}`,
+                                                        "Amount",
+                                                    ];
+                                                }
+                                                return [value, "Count"];
+                                            }}
+                                        />
+                                        <Legend
+                                            wrapperStyle={{ fontSize: "12px" }}
+                                        />
+                                        <Bar
+                                            dataKey="count"
+                                            fill="#3b82f6"
+                                            radius={[8, 8, 0, 0]}
+                                            name="Count"
+                                        />
+                                        <Bar
+                                            dataKey="amount"
+                                            fill="#8b5cf6"
+                                            radius={[8, 8, 0, 0]}
+                                            name="Amount (₱)"
+                                        />
+                                    </BarChart>
+                                </ResponsiveContainer>
                             </div>
 
                             <div className="p-4 bg-blue-50 rounded-lg">
@@ -200,36 +270,58 @@ export function ShowAnalytics({
                                 <BarChart3 className="w-8 h-8 text-blue-600" />
                             </div>
 
-                            <div className="grid grid-cols-3 gap-3">
-                                <div className="p-3 bg-green-50 rounded-lg text-center">
-                                    <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-1" />
-                                    <p className="text-xs text-gray-600 mb-1">
-                                        Present
-                                    </p>
-                                    <p className="text-lg font-bold text-green-700">
-                                        {attendanceAnalytics.presentRecords}
-                                    </p>
-                                </div>
-
-                                <div className="p-3 bg-yellow-50 rounded-lg text-center">
-                                    <Clock className="w-5 h-5 text-yellow-600 mx-auto mb-1" />
-                                    <p className="text-xs text-gray-600 mb-1">
-                                        Late
-                                    </p>
-                                    <p className="text-lg font-bold text-yellow-700">
-                                        {attendanceAnalytics.lateRecords}
-                                    </p>
-                                </div>
-
-                                <div className="p-3 bg-red-50 rounded-lg text-center">
-                                    <XCircle className="w-5 h-5 text-red-600 mx-auto mb-1" />
-                                    <p className="text-xs text-gray-600 mb-1">
-                                        Absent
-                                    </p>
-                                    <p className="text-lg font-bold text-red-700">
-                                        {attendanceAnalytics.absentRecords}
-                                    </p>
-                                </div>
+                            {/* Pie Chart */}
+                            <div className="p-4 bg-white rounded-lg border border-gray-200">
+                                <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                                    Attendance Distribution
+                                </h4>
+                                <ResponsiveContainer width="100%" height={250}>
+                                    <RechartsPieChart>
+                                        <Pie
+                                            data={attendancePieData}
+                                            cx="50%"
+                                            cy="50%"
+                                            labelLine={false}
+                                            label={({
+                                                name,
+                                                percent,
+                                                value,
+                                            }) =>
+                                                `${name}: ${value} (${(
+                                                    percent * 100
+                                                ).toFixed(0)}%)`
+                                            }
+                                            outerRadius={80}
+                                            fill="#8884d8"
+                                            dataKey="value"
+                                        >
+                                            {attendancePieData.map(
+                                                (entry, index) => (
+                                                    <Cell
+                                                        key={`cell-${index}`}
+                                                        fill={
+                                                            COLORS[
+                                                                index %
+                                                                    COLORS.length
+                                                            ]
+                                                        }
+                                                    />
+                                                )
+                                            )}
+                                        </Pie>
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: "#fff",
+                                                border: "1px solid #e5e7eb",
+                                                borderRadius: "8px",
+                                                fontSize: "12px",
+                                            }}
+                                        />
+                                        <Legend
+                                            wrapperStyle={{ fontSize: "12px" }}
+                                        />
+                                    </RechartsPieChart>
+                                </ResponsiveContainer>
                             </div>
 
                             <div className="p-4 bg-green-50 rounded-lg">
@@ -248,38 +340,6 @@ export function ShowAnalytics({
                                             width: `${attendanceAnalytics.attendanceRate}%`,
                                         }}
                                     ></div>
-                                </div>
-                            </div>
-
-                            <div className="p-4 bg-indigo-50 rounded-lg">
-                                <p className="text-sm text-gray-600 mb-2">
-                                    This Month
-                                </p>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-xs text-gray-500">
-                                            Events
-                                        </p>
-                                        <p className="text-xl font-bold text-indigo-700">
-                                            {stats.currentMonthEvents}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500">
-                                            Attendance
-                                        </p>
-                                        <p className="text-xl font-bold text-indigo-700">
-                                            {stats.currentMonthAttendance}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500">
-                                            Sanctions
-                                        </p>
-                                        <p className="text-xl font-bold text-indigo-700">
-                                            {stats.currentMonthSanctions}
-                                        </p>
-                                    </div>
                                 </div>
                             </div>
                         </div>
